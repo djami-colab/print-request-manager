@@ -382,8 +382,16 @@
       "password": "password",
       "profile": "operateur",
       "created_at": "2026-07-23T14:08:09.170Z"
+    },
+    {
+      "id": 3,
+      "name": "Fatima Benali",
+      "email": "fatima.benali@example.com",
+      "password": "Password123",
+      "profile": "demandeur",
+      "created_at": "2026-07-23T14:26:24.033Z"
     }
   ],
   "nextRequestId": 12,
-  "nextUserId": 3
+  "nextUserId": 4
 }

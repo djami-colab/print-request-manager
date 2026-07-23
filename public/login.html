@@ -358,32 +358,7 @@
           <div class="error-message" id="signup-error"></div>
           <div class="success-message" id="signup-success"></div>
 
-          <div class="form-group">
-            <label>Profil <span style="color: #c33;">*</span></label>
-            <div class="profile-selector">
-              <div class="profile-option">
-                <input type="radio" id="profile-demandeur" name="profile" value="demandeur" required>
-                <label for="profile-demandeur" class="profile-label">
-                  <i data-lucide="user"></i>
-                  <span>
-                    <span class="title">Demandeur</span>
-                    <span class="desc">Créer des bons</span>
-                  </span>
-                </label>
-              </div>
-
-              <div class="profile-option">
-                <input type="radio" id="profile-operateur" name="profile" value="operateur" required>
-                <label for="profile-operateur" class="profile-label">
-                  <i data-lucide="wrench"></i>
-                  <span>
-                    <span class="title">Opérateur</span>
-                    <span class="desc">Gérer les bons</span>
-                  </span>
-                </label>
-              </div>
-            </div>
-          </div>
+          <input type="hidden" name="profile" value="demandeur">
 
           <div class="form-group">
             <label for="signup-name">Nom complet</label>
@@ -478,7 +453,7 @@
     async function handleSignup(e) {
       e.preventDefault();
       
-      const profile = document.querySelector('input[name="profile"]:checked').value;
+      const profile = 'demandeur'; // Forcer le profil demandeur
       const name = document.getElementById('signup-name').value;
       const email = document.getElementById('signup-email').value;
       const password = document.getElementById('signup-password').value;

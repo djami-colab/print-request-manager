@@ -181,6 +181,20 @@
       "status": "pending",
       "created_at": "2026-07-23T14:57:25.786Z",
       "completed_at": null
+    },
+    {
+      "id": 14,
+      "request_number": "CIDI-2026-0014",
+      "requester_name": "Ahmed Hassan",
+      "department": "Architecture",
+      "project": "Nouveau Batiment A",
+      "request_type": "Appareil de tirage de plans",
+      "reason": null,
+      "device_used": null,
+      "operator_name": null,
+      "status": "pending",
+      "created_at": "2026-07-23T15:06:25.763Z",
+      "completed_at": null
     }
   ],
   "requestItems": [
@@ -425,6 +439,17 @@
       "copies": 1,
       "surface_m2": 0.125,
       "total_pages": 1
+    },
+    {
+      "id": 23,
+      "request_id": 14,
+      "document_name": "Plans A3",
+      "format": "A3",
+      "color_nb": "Couleur",
+      "pages": 1,
+      "copies": 1,
+      "surface_m2": 0.125,
+      "total_pages": 1
     }
   ],
   "users": [
@@ -453,6 +478,6 @@
       "created_at": "2026-07-23T14:26:24.033Z"
     }
   ],
-  "nextRequestId": 14,
+  "nextRequestId": 15,
   "nextUserId": 4
 }

@@ -154,12 +154,6 @@ async function submitPrintRequest(event) {
   const department = document.getElementById('department').value;
   const project = document.getElementById('project').value;
   const reason = document.getElementById('reason').value;
-  const operatorName = document.getElementById('operator_name').value;
-  
-  if (!operatorName) {
-    alert('Veuillez remplir le nom de l\'opérateur de tirage.');
-    return;
-  }
   
   // Récupérer les types de moyens (checkboxes)
   const requestTypeCheckboxes = document.querySelectorAll('input[name="request_type"]:checked');
@@ -169,6 +163,10 @@ async function submitPrintRequest(event) {
   }
   
   const requestTypes = Array.from(requestTypeCheckboxes).map(cb => cb.value);
+  
+  // Récupérer les imprimantes sélectionnées
+  const printerCheckboxes = document.querySelectorAll('input[name="printer"]:checked');
+  const printers = Array.from(printerCheckboxes).map(cb => cb.value);
   
   // Récupérer les items (documents)
   const items = [];
@@ -221,7 +219,7 @@ async function submitPrintRequest(event) {
       project: project,
       request_type: requestTypes,
       reason: reason,
-      operator_name: operatorName,
+      printers: printers,
       items: items
     };
     

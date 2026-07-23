@@ -284,8 +284,14 @@
         <div class="demandeur-section">
             <div style="grid-column: 1;">
                 <label>Nom de l'opérateur:</label>
-                <div class="value" id="bon-operator">-</div>
+                <div class="value" style="border: 1px solid #333; min-height: 20px;">&nbsp;</div>
             </div>
+        </div>
+
+        <!-- Section Imprimantes -->
+        <div class="section-title">IMPRIMANTE UTILISÉE</div>
+        <div class="checkbox-section" id="bon-printers">
+            <!-- Imprimantes seront insérées ici -->
         </div>
 
         <!-- Section Appareils Utilisés -->
@@ -299,12 +305,10 @@
             <div class="signature-box">
                 <p>Visa du demandeur</p>
                 <div style="height: 60px;"></div>
-                <p class="signature-label">Nom & Date</p>
             </div>
             <div class="signature-box">
                 <p>Visa du chef de département</p>
                 <div style="height: 60px;"></div>
-                <p class="signature-label">Nom & Date</p>
             </div>
         </div>
     </div>
@@ -331,7 +335,6 @@
             document.getElementById('bon-requester').textContent = bonData.requester_name;
             document.getElementById('bon-department').textContent = bonData.department || '-';
             document.getElementById('bon-reason').textContent = bonData.reason || 'Aucune raison spécifiée';
-            document.getElementById('bon-operator').textContent = bonData.operator_name || '-';
 
             // Remplir les pièces à imprimer
             if (bonData.items && bonData.items.length > 0) {
@@ -364,6 +367,17 @@
                 document.getElementById('bon-motif').textContent = bonData.reason;
             }
 
+            // Remplir les imprimantes disponibles
+            const allPrinters = ['Ricoh MP C2003', 'Ricoh MP C3003', 'Ricoh MP C5004', 'Canon ImageRunner 2520'];
+            const selectedPrinters = bonData.printers || [];
+            const printersHtml = allPrinters.map(printer => `
+                <div class="checkbox-item">
+                    <input type="checkbox" ${selectedPrinters.includes(printer) ? 'checked' : ''} disabled>
+                    <span>${printer}</span>
+                </div>
+            `).join('');
+            document.getElementById('bon-printers').innerHTML = printersHtml;
+
             // Remplir les appareils utilisés (vides par défaut)
             const devicesHtml = `
                 <div class="checkbox-item">
@@ -377,10 +391,6 @@
                 <div class="checkbox-item">
                     <input type="checkbox" disabled>
                     <span>Relieur</span>
-                </div>
-                <div class="checkbox-item">
-                    <input type="checkbox" disabled>
-                    <span>Imprimante</span>
                 </div>
             `;
             document.getElementById('bon-devices').innerHTML = devicesHtml;

@@ -153,6 +153,20 @@
       "status": "pending",
       "created_at": "2026-07-23T14:14:59.691Z",
       "completed_at": null
+    },
+    {
+      "id": 12,
+      "request_number": "CIDI-2026-0012",
+      "requester_name": "Mohamed Alami",
+      "department": "Architecture",
+      "project": "Construction Pont Oued Sebou",
+      "request_type": "Appareil de tirage de plans",
+      "reason": "Impression des plans du projet",
+      "device_used": null,
+      "operator_name": null,
+      "status": "pending",
+      "created_at": "2026-07-23T14:37:10.887Z",
+      "completed_at": null
     }
   ],
   "requestItems": [
@@ -364,6 +378,28 @@
       "copies": 1,
       "surface_m2": 0.0625,
       "total_pages": 1
+    },
+    {
+      "id": 20,
+      "request_id": 12,
+      "document_name": "Plan A3 Projet",
+      "format": "A3",
+      "color_nb": "N&B",
+      "pages": 5,
+      "copies": 3,
+      "surface_m2": 1.875,
+      "total_pages": 15
+    },
+    {
+      "id": 21,
+      "request_id": 12,
+      "document_name": "Devis architecte",
+      "format": "A4",
+      "color_nb": "Couleur",
+      "pages": 10,
+      "copies": 2,
+      "surface_m2": 1.25,
+      "total_pages": 20
     }
   ],
   "users": [
@@ -392,6 +428,6 @@
       "created_at": "2026-07-23T14:26:24.033Z"
     }
   ],
-  "nextRequestId": 12,
+  "nextRequestId": 13,
   "nextUserId": 4
 }

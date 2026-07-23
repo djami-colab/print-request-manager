@@ -31,8 +31,72 @@ function initDB() {
   }
 }
 
+// Middleware pour vérifier l'authentification
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  
+  if (!token) {
+    return res.status(401).json({ error: 'Accès non autorisé' });
+  }
+  
+  const decoded = db.verifyToken(token);
+  if (!decoded) {
+    return res.status(403).json({ error: 'Token invalide' });
+  }
+  
+  req.user = decoded;
+  next();
+}
+
+// API: Connexion
+app.post('/api/auth/login', (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email et mot de passe requis' });
+    }
+    
+    const user = db.login(email, password);
+    if (!user) {
+      return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
+    }
+    
+    const token = db.generateToken(user);
+    res.json({ token, user });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// API: Création de compte
+app.post('/api/auth/signup', (req, res) => {
+  try {
+    const { name, email, password, profile } = req.body;
+    
+    if (!name || !email || !password || !profile) {
+      return res.status(400).json({ error: 'Tous les champs sont requis' });
+    }
+    
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Le mot de passe doit contenir au moins 6 caractères' });
+    }
+    
+    const user = db.signup(name, email, password, profile);
+    if (!user) {
+      return res.status(400).json({ error: 'Cet email existe déjà' });
+    }
+    
+    const token = db.generateToken(user);
+    res.status(201).json({ token, user });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // API: Recupere toutes les demandes avec leurs documents
-app.get('/api/requests', async (req, res) => {
+app.get('/api/requests', authenticateToken, async (req, res) => {
   try {
     const { status, department, search } = req.query;
     const filters = {};
@@ -48,7 +112,7 @@ app.get('/api/requests', async (req, res) => {
 });
 
 // API: Creer un bon de demande
-app.post('/api/requests', async (req, res) => {
+app.post('/api/requests', authenticateToken, async (req, res) => {
   try {
     const { requester_name, department, project, request_type, reason, items } = req.body;
     
@@ -64,7 +128,7 @@ app.post('/api/requests', async (req, res) => {
 });
 
 // API: Valider/Finaliser un bon par l'operateur
-app.put('/api/requests/:id/complete', async (req, res) => {
+app.put('/api/requests/:id/complete', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { device_used, operator_name } = req.body;
@@ -85,7 +149,7 @@ app.put('/api/requests/:id/complete', async (req, res) => {
 });
 
 // API: Obtenir des statistiques pour le tableau de bord
-app.get('/api/stats', async (req, res) => {
+app.get('/api/stats', authenticateToken, async (req, res) => {
   try {
     const stats = db.getStats();
     res.json(stats);
@@ -95,7 +159,7 @@ app.get('/api/stats', async (req, res) => {
 });
 
 // API: Export Excel avec ExcelJS (haute qualite, formate)
-app.get('/api/export', async (req, res) => {
+app.get('/api/export', authenticateToken, async (req, res) => {
   try {
     const { status, department, search } = req.query;
     const filters = {};

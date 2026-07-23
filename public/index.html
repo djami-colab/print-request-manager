@@ -34,17 +34,6 @@
         </div>
       </div>
       
-      <div class="profile-switcher">
-        <span class="switcher-label">Profil Actuel :</span>
-        <div class="switcher-buttons">
-          <button id="btn-profile-demandeur" class="btn-switch active" onclick="switchProfile('demandeur')">
-            <i data-lucide="user"></i> Demandeur
-          </button>
-          <button id="btn-profile-operateur" class="btn-switch" onclick="switchProfile('operateur')">
-            <i data-lucide="wrench"></i> Opérateur
-          </button>
-        </div>
-      </div>
       
       <nav class="sidebar-menu">
         <a href="#" id="menu-new" class="menu-item active" onclick="switchTab('new')">
@@ -75,14 +64,20 @@
           <h2 id="page-title">Créer une demande d'impression</h2>
           <p id="page-subtitle">Remplissez les détails pour générer votre bon de commande d'impression.</p>
         </div>
-        <div class="user-badge">
-          <div class="avatar">
-            <span id="user-avatar-initials">D</span>
+        <div class="header-actions" style="display: flex; gap: 15px; align-items: center;">
+          <div class="user-badge">
+            <div class="avatar">
+              <span id="user-avatar-initials">D</span>
+            </div>
+            <div class="user-info">
+              <strong id="user-profile-title">Demandeur CIDI</strong>
+              <span id="user-profile-sub">Accès Standard</span>
+            </div>
           </div>
-          <div class="user-info">
-            <strong id="user-profile-title">Demandeur CIDI</strong>
-            <span id="user-profile-sub">Accès Standard</span>
-          </div>
+          <button id="btn-logout" class="btn btn-secondary btn-sm" onclick="logout()" style="display: flex; align-items: center; gap: 6px;">
+            <i data-lucide="log-out" style="width: 16px; height: 16px;"></i>
+            Déconnexion
+          </button>
         </div>
       </header>
 

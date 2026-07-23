@@ -14,32 +14,75 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function initializeApp() {
   console.log('[v0] App initialized');
-  switchProfile('demandeur');
-  switchTab('new');
-  // Ajouter une première ligne de document
-  if (document.getElementById('document-rows-container').querySelectorAll('tr').length === 0) {
-    addDocumentRow();
+  
+  // Vérifier l'authentification
+  const token = localStorage.getItem('token');
+  const userStr = localStorage.getItem('user');
+  
+  if (!token || !userStr) {
+    // Rediriger vers la page de connexion
+    window.location.href = '/login.html';
+    return;
+  }
+  
+  try {
+    const user = JSON.parse(userStr);
+    currentProfile = user.profile;
+    
+    // Mettre à jour l'interface avec les infos utilisateur
+    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase();
+    document.getElementById('user-avatar-initials').textContent = initials;
+    document.getElementById('user-profile-title').textContent = 
+      user.profile === 'operateur' ? 'Opérateur CIDI' : 'Demandeur CIDI';
+    document.getElementById('user-profile-sub').textContent = 
+      user.profile === 'operateur' ? 'Accès Opérateur' : 'Accès Standard';
+    
+    // Afficher/masquer les onglets selon le profil
+    updateMenuVisibility();
+    
+    // Sélectionner le premier onglet visible
+    if (currentProfile === 'demandeur') {
+      switchTab('new');
+    } else {
+      switchTab('list');
+    }
+    
+    // Ajouter une première ligne de document
+    if (document.getElementById('document-rows-container').querySelectorAll('tr').length === 0) {
+      addDocumentRow();
+    }
+  } catch (error) {
+    console.error('[v0] Error parsing user:', error);
+    logout();
   }
 }
 
-// Changement de profil
-function switchProfile(profile) {
-  currentProfile = profile;
-  document.querySelectorAll('.btn-switch').forEach(btn => btn.classList.remove('active'));
+// Fonction pour mettre à jour la visibilité des menus selon le profil
+function updateMenuVisibility() {
+  const menuNew = document.getElementById('menu-new');
+  const menuList = document.getElementById('menu-list');
+  const menuStats = document.getElementById('menu-stats');
   
-  if (profile === 'demandeur') {
-    document.getElementById('btn-profile-demandeur').classList.add('active');
-    document.getElementById('user-profile-title').textContent = 'Demandeur CIDI';
-    document.getElementById('user-profile-sub').textContent = 'Accès Standard';
-    document.getElementById('user-avatar-initials').textContent = 'D';
-  } else {
-    document.getElementById('btn-profile-operateur').classList.add('active');
-    document.getElementById('user-profile-title').textContent = 'Opérateur CIDI';
-    document.getElementById('user-profile-sub').textContent = 'Accès Spécialisé';
-    document.getElementById('user-avatar-initials').textContent = 'O';
+  if (!menuNew || !menuList || !menuStats) return;
+  
+  if (currentProfile === 'demandeur') {
+    // Demandeur: voir seulement "Nouveau Bon"
+    menuNew.style.display = 'flex';
+    menuList.style.display = 'none';
+    menuStats.style.display = 'none';
+  } else if (currentProfile === 'operateur') {
+    // Opérateur: voir "Suivi des Bons" et "Tableau de Bord"
+    menuNew.style.display = 'none';
+    menuList.style.display = 'flex';
+    menuStats.style.display = 'flex';
   }
-  
-  renderLucideIcons();
+}
+
+// Fonction de déconnexion
+function logout() {
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  window.location.href = '/login.html';
 }
 
 // Changement d'onglet
@@ -138,9 +181,13 @@ async function submitPrintRequest(event) {
   });
   
   try {
+    const token = localStorage.getItem('token');
     const response = await fetch('/api/requests', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
       body: JSON.stringify({
         requester_name: requesterName,
         department: department,
@@ -218,7 +265,10 @@ async function fetchRequests() {
 // Charger les demandes
 async function loadRequests() {
   try {
-    const response = await fetch('/api/requests');
+    const token = localStorage.getItem('token');
+    const response = await fetch('/api/requests', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
     if (!response.ok) throw new Error('Erreur lors du chargement');
     
     currentRequests = await response.json();
@@ -318,9 +368,13 @@ async function completeRequest(requestId) {
   if (!deviceUsed || !operatorName) return;
   
   try {
+    const token = localStorage.getItem('token');
     const response = await fetch(`/api/requests/${requestId}/complete`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
       body: JSON.stringify({ device_used: deviceUsed, operator_name: operatorName })
     });
     
@@ -348,7 +402,10 @@ async function loadStats() {
       return; // Pas besoin de charger si pas visible
     }
     
-    const response = await fetch('/api/stats');
+    const token = localStorage.getItem('token');
+    const response = await fetch('/api/stats', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
     if (!response.ok) throw new Error('Erreur lors du chargement des stats');
     
     const data = await response.json();

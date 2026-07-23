@@ -7,7 +7,9 @@ const DB_FILE = path.join(__dirname, 'data.json');
 let db = {
   requests: [],
   requestItems: [],
-  nextRequestId: 1
+  users: [],
+  nextRequestId: 1,
+  nextUserId: 1
 };
 
 // Charger les données depuis le fichier
@@ -40,6 +42,26 @@ function saveDatabase() {
 // Données de démonstration
 function seedDemoData() {
   if (db.requests.length > 0) return;
+
+  // Ajouter des utilisateurs de démonstration
+  db.users = [
+    {
+      id: db.nextUserId++,
+      name: 'Demandeur Demo',
+      email: 'demo@demandeur.com',
+      password: 'password',
+      profile: 'demandeur',
+      created_at: new Date().toISOString()
+    },
+    {
+      id: db.nextUserId++,
+      name: 'Opérateur Demo',
+      email: 'demo@operateur.com',
+      password: 'password',
+      profile: 'operateur',
+      created_at: new Date().toISOString()
+    }
+  ];
   
   const departments = ['Architecture', 'Structure', 'VRD', 'Essais', 'Équipements', 'DEC', 'Coordination', 'Finance', 'DAS'];
   const names = ['Jean Dupont', 'Marie Curie', 'Pierre Martin', 'Sophie Bernard', 'Thomas Dubois'];
@@ -269,11 +291,75 @@ function getStats() {
   };
 }
 
+// Fonction d'authentification
+function login(email, password) {
+  if (!db.users) {
+    console.error('[DB] Users array not initialized');
+    return null;
+  }
+  
+  const user = db.users.find(u => u.email === email && u.password === password);
+  if (!user) {
+    return null;
+  }
+  // Retourner une copie sans le mot de passe
+  const { password: _, ...userWithoutPassword } = user;
+  return userWithoutPassword;
+}
+
+// Fonction de création de compte
+function signup(name, email, password, profile) {
+  // Vérifier que l'email n'existe pas déjà
+  if (db.users.find(u => u.email === email)) {
+    return null;
+  }
+  
+  const newUser = {
+    id: db.nextUserId++,
+    name: name,
+    email: email,
+    password: password,
+    profile: profile,
+    created_at: new Date().toISOString()
+  };
+  
+  db.users.push(newUser);
+  saveDatabase();
+  
+  const { password: _, ...userWithoutPassword } = newUser;
+  return userWithoutPassword;
+}
+
+// Générer un token simplifié (en base64)
+function generateToken(user) {
+  const tokenData = {
+    userId: user.id,
+    email: user.email,
+    profile: user.profile,
+    iat: Date.now()
+  };
+  return Buffer.from(JSON.stringify(tokenData)).toString('base64');
+}
+
+// Vérifier un token
+function verifyToken(token) {
+  try {
+    const decoded = JSON.parse(Buffer.from(token, 'base64').toString());
+    return decoded;
+  } catch {
+    return null;
+  }
+}
+
 module.exports = {
   loadDatabase,
   saveDatabase,
   createRequest,
   getRequests,
   completeRequest,
-  getStats
+  getStats,
+  login,
+  signup,
+  generateToken,
+  verifyToken
 };

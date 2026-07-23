@@ -126,7 +126,7 @@
               <div class="header-title-flex">
                 <i data-lucide="files" class="header-icon"></i>
                 <h3>Pièces à Imprimer</h3>
-                <span class="subtitle-text">(Une ligne par document)</span>
+                <span class="subtitle-text">(une ligne par pièce)</span>
               </div>
               <button type="button" class="btn btn-secondary btn-sm" onclick="addDocumentRow()">
                 <i data-lucide="plus"></i> Ajouter un document
@@ -166,7 +166,7 @@
                 <label class="checkbox-container">
                   <input type="checkbox" name="request_type" value="Appareil de tirage de plans">
                   <span class="checkmark"></span>
-                  Appareil de tirage de plans (Traceurs)
+                  Appareil de tirage de plans
                 </label>
                 
                 <label class="checkbox-container">
@@ -184,7 +184,7 @@
                 <label class="checkbox-container">
                   <input type="checkbox" name="request_type" value="Appareil d'impression">
                   <span class="checkmark"></span>
-                  Appareil d'impression (Imprimantes de bureau)
+                  Appareil d'impression
                 </label>
               </div>
             </div>
@@ -201,30 +201,46 @@
             </div>
           </div>
 
-          <!-- Bloc 4: Imprimante -->
+          <!-- Bloc 4: Appareil Utilisé -->
           <div class="card form-card">
             <div class="card-header">
-              <i data-lucide="printer" class="header-icon"></i>
-              <h3>Imprimante Utilisée</h3>
+              <i data-lucide="cpu" class="header-icon"></i>
+              <h3>Appareil Utilisé</h3>
             </div>
             <div class="form-group">
-              <label>Sélectionner l'imprimante</label>
+              <label>Sélectionner le(s) appareil(s)</label>
               <div class="checkbox-section" style="display: flex; flex-direction: column; gap: 10px;">
                 <div class="checkbox-item">
-                  <input type="checkbox" name="printer" value="Ricoh MP C2003" id="printer_1">
-                  <label for="printer_1" style="margin-left: 8px; cursor: pointer; font-weight: normal;">Ricoh MP C2003</label>
+                  <input type="checkbox" name="device" value="Traceur T1600" id="device_1">
+                  <label for="device_1" style="margin-left: 8px; cursor: pointer; font-weight: normal;">Traceur T1600</label>
                 </div>
                 <div class="checkbox-item">
-                  <input type="checkbox" name="printer" value="Ricoh MP C3003" id="printer_2">
-                  <label for="printer_2" style="margin-left: 8px; cursor: pointer; font-weight: normal;">Ricoh MP C3003</label>
+                  <input type="checkbox" name="device" value="Traceur T1300" id="device_2">
+                  <label for="device_2" style="margin-left: 8px; cursor: pointer; font-weight: normal;">Traceur T1300</label>
                 </div>
                 <div class="checkbox-item">
-                  <input type="checkbox" name="printer" value="Ricoh MP C5004" id="printer_3">
-                  <label for="printer_3" style="margin-left: 8px; cursor: pointer; font-weight: normal;">Ricoh MP C5004</label>
+                  <input type="checkbox" name="device" value="Traceur Epson 5600" id="device_3">
+                  <label for="device_3" style="margin-left: 8px; cursor: pointer; font-weight: normal;">Traceur Epson 5600</label>
                 </div>
                 <div class="checkbox-item">
-                  <input type="checkbox" name="printer" value="Canon ImageRunner 2520" id="printer_4">
-                  <label for="printer_4" style="margin-left: 8px; cursor: pointer; font-weight: normal;">Canon ImageRunner 2520</label>
+                  <input type="checkbox" name="device" value="Altalink Xerox" id="device_4">
+                  <label for="device_4" style="margin-left: 8px; cursor: pointer; font-weight: normal;">Altalink Xerox</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" name="device" value="Kyocera 7003i" id="device_5">
+                  <label for="device_5" style="margin-left: 8px; cursor: pointer; font-weight: normal;">Kyocera 7003i</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" name="device" value="Scanner Contex" id="device_6">
+                  <label for="device_6" style="margin-left: 8px; cursor: pointer; font-weight: normal;">Scanner Contex</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" name="device" value="Relieuse" id="device_7">
+                  <label for="device_7" style="margin-left: 8px; cursor: pointer; font-weight: normal;">Relieuse</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" name="device" value="Photocopieuse Xerox" id="device_8">
+                  <label for="device_8" style="margin-left: 8px; cursor: pointer; font-weight: normal;">Photocopieuse Xerox</label>
                 </div>
               </div>
             </div>
@@ -237,8 +253,8 @@
               <h3>Opérateur de Tirage</h3>
             </div>
             <div class="form-group">
-              <label for="operator_name">Nom de l'opérateur (à remplir à la main)</label>
-              <input type="text" id="operator_name" placeholder="Laissé vide - à remplir avec stylo" readonly>
+              <label for="operator_name">Nom de l'opérateur</label>
+              <input type="text" id="operator_name" placeholder="Ex: Mohamed Karim">
             </div>
           </div>
 

@@ -284,18 +284,12 @@
         <div class="demandeur-section">
             <div style="grid-column: 1;">
                 <label>Nom de l'opérateur:</label>
-                <div class="value" style="border: 1px solid #333; min-height: 20px;">&nbsp;</div>
+                <div class="value" id="bon-operator" style="border: 1px solid #333; min-height: 20px;">&nbsp;</div>
             </div>
         </div>
 
-        <!-- Section Imprimantes -->
-        <div class="section-title">IMPRIMANTE UTILISÉE</div>
-        <div class="checkbox-section" id="bon-printers">
-            <!-- Imprimantes seront insérées ici -->
-        </div>
-
         <!-- Section Appareils Utilisés -->
-        <div class="section-title">APPAREILS UTILISÉS</div>
+        <div class="section-title">APPAREIL UTILISÉ</div>
         <div class="checkbox-section" id="bon-devices">
             <!-- Appareils seront insérés ici -->
         </div>
@@ -367,32 +361,29 @@
                 document.getElementById('bon-motif').textContent = bonData.reason;
             }
 
-            // Remplir les imprimantes disponibles
-            const allPrinters = ['Ricoh MP C2003', 'Ricoh MP C3003', 'Ricoh MP C5004', 'Canon ImageRunner 2520'];
-            const selectedPrinters = bonData.printers || [];
-            const printersHtml = allPrinters.map(printer => `
+            // Remplir le nom de l'opérateur
+            if (bonData.operator_name) {
+                document.getElementById('bon-operator').textContent = bonData.operator_name;
+            }
+
+            // Remplir les appareils disponibles
+            const allDevices = [
+                'Traceur T1600',
+                'Traceur T1300',
+                'Traceur Epson 5600',
+                'Altalink Xerox',
+                'Kyocera 7003i',
+                'Scanner Contex',
+                'Relieuse',
+                'Photocopieuse Xerox'
+            ];
+            const selectedDevices = bonData.devices || [];
+            const devicesHtml = allDevices.map(device => `
                 <div class="checkbox-item">
-                    <input type="checkbox" ${selectedPrinters.includes(printer) ? 'checked' : ''} disabled>
-                    <span>${printer}</span>
+                    <input type="checkbox" ${selectedDevices.includes(device) ? 'checked' : ''} disabled>
+                    <span>${device}</span>
                 </div>
             `).join('');
-            document.getElementById('bon-printers').innerHTML = printersHtml;
-
-            // Remplir les appareils utilisés (vides par défaut)
-            const devicesHtml = `
-                <div class="checkbox-item">
-                    <input type="checkbox" disabled>
-                    <span>Traceur</span>
-                </div>
-                <div class="checkbox-item">
-                    <input type="checkbox" disabled>
-                    <span>Photocopieur</span>
-                </div>
-                <div class="checkbox-item">
-                    <input type="checkbox" disabled>
-                    <span>Relieur</span>
-                </div>
-            `;
             document.getElementById('bon-devices').innerHTML = devicesHtml;
         }
 

@@ -164,9 +164,12 @@ async function submitPrintRequest(event) {
   
   const requestTypes = Array.from(requestTypeCheckboxes).map(cb => cb.value);
   
-  // Récupérer les imprimantes sélectionnées
-  const printerCheckboxes = document.querySelectorAll('input[name="printer"]:checked');
-  const printers = Array.from(printerCheckboxes).map(cb => cb.value);
+  // Récupérer les appareils sélectionnés
+  const deviceCheckboxes = document.querySelectorAll('input[name="device"]:checked');
+  const devices = Array.from(deviceCheckboxes).map(cb => cb.value);
+  
+  // Récupérer le nom de l'opérateur
+  const operatorName = document.getElementById('operator_name').value;
   
   // Récupérer les items (documents)
   const items = [];
@@ -219,7 +222,8 @@ async function submitPrintRequest(event) {
       project: project,
       request_type: requestTypes,
       reason: reason,
-      printers: printers,
+      devices: devices,
+      operator_name: operatorName,
       items: items
     };
     

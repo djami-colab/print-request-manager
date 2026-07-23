@@ -195,6 +195,20 @@
       "status": "pending",
       "created_at": "2026-07-23T15:06:25.763Z",
       "completed_at": null
+    },
+    {
+      "id": 15,
+      "request_number": "CIDI-2026-0015",
+      "requester_name": "Mohamed Karim",
+      "department": "Architecture",
+      "project": "Projet Pont Oued Sebou",
+      "request_type": "Appareil de tirage de plans",
+      "reason": null,
+      "device_used": null,
+      "operator_name": null,
+      "status": "pending",
+      "created_at": "2026-07-23T15:19:17.428Z",
+      "completed_at": null
     }
   ],
   "requestItems": [
@@ -450,6 +464,17 @@
       "copies": 1,
       "surface_m2": 0.125,
       "total_pages": 1
+    },
+    {
+      "id": 24,
+      "request_id": 15,
+      "document_name": "Plans Détail",
+      "format": "A3",
+      "color_nb": "Couleur",
+      "pages": 1,
+      "copies": 1,
+      "surface_m2": 0.125,
+      "total_pages": 1
     }
   ],
   "users": [
@@ -478,6 +503,6 @@
       "created_at": "2026-07-23T14:26:24.033Z"
     }
   ],
-  "nextRequestId": 15,
+  "nextRequestId": 16,
   "nextUserId": 4
 }

@@ -154,14 +154,21 @@ async function submitPrintRequest(event) {
   const department = document.getElementById('department').value;
   const project = document.getElementById('project').value;
   const reason = document.getElementById('reason').value;
+  const operatorName = document.getElementById('operator_name').value;
   
-  // Récupérer le type de moyen (checkboxes)
+  if (!operatorName) {
+    alert('Veuillez remplir le nom de l\'opérateur de tirage.');
+    return;
+  }
+  
+  // Récupérer les types de moyens (checkboxes)
   const requestTypeCheckboxes = document.querySelectorAll('input[name="request_type"]:checked');
   if (requestTypeCheckboxes.length === 0) {
     alert('Veuillez sélectionner au moins un type de moyen demandé.');
     return;
   }
-  const requestType = requestTypeCheckboxes[0].value;
+  
+  const requestTypes = Array.from(requestTypeCheckboxes).map(cb => cb.value);
   
   // Récupérer les items (documents)
   const items = [];
@@ -180,14 +187,15 @@ async function submitPrintRequest(event) {
   }
   
   itemRows.forEach(row => {
-    const inputs = row.querySelectorAll('input, select');
-    if (inputs.length < 5) return; // Passer les lignes incomplètes
+    const cells = row.querySelectorAll('td');
+    if (cells.length < 6) return; // Passer les lignes incomplètes
     
-    const documentName = inputs[0].value;
-    const format = inputs[1].value;
-    const colorNb = inputs[2].value;
-    const pages = parseInt(inputs[3].value) || 1;
-    const copies = parseInt(inputs[4].value) || 1;
+    // Récupérer les valeurs de chaque cellule
+    const documentName = cells[1].querySelector('input').value;
+    const format = cells[2].querySelector('select').value;
+    const colorNb = cells[3].querySelector('select').value;
+    const pages = parseInt(cells[4].querySelector('input').value) || 1;
+    const copies = parseInt(cells[5].querySelector('input').value) || 1;
     
     if (documentName && format && colorNb) {
       items.push({
@@ -200,7 +208,27 @@ async function submitPrintRequest(event) {
     }
   });
   
+  if (items.length === 0) {
+    alert('Veuillez ajouter au moins un document avec les informations complètes.');
+    return;
+  }
+  
   try {
+    // Sauvegarder les données pour affichage du bon
+    const bonData = {
+      requester_name: requesterName,
+      department: department,
+      project: project,
+      request_type: requestTypes,
+      reason: reason,
+      operator_name: operatorName,
+      items: items
+    };
+    
+    // Stocker dans sessionStorage pour la page du bon
+    sessionStorage.setItem('bonData', JSON.stringify(bonData));
+    
+    // Envoyer au serveur
     const token = localStorage.getItem('token');
     const response = await fetch('/api/requests', {
       method: 'POST',
@@ -212,7 +240,7 @@ async function submitPrintRequest(event) {
         requester_name: requesterName,
         department: department,
         project: project,
-        request_type: requestType,
+        request_type: requestTypes.join(', '),
         reason: reason,
         items: items
       })
@@ -223,21 +251,23 @@ async function submitPrintRequest(event) {
     }
     
     const data = await response.json();
-    alert(`Demande créée avec succès!\nNuméro: ${data.request_number}`);
     
-    // Réinitialiser le formulaire
-    const form = document.getElementById('form-print-request');
-    if (form) form.reset();
+    // Ouvrir la page du bon dans un nouvel onglet/fenêtre
+    window.open('/bon-impression.html', 'bon_impression', 'width=950,height=1200');
     
-    // Vider et réinitialiser le conteneur de documents
-    const docContainer = document.getElementById('document-rows-container');
-    if (docContainer) {
-      docContainer.innerHTML = '';
-      addDocumentRow();
-    }
-    
-    // Recharger les demandes
-    loadRequests();
+    // Réinitialiser le formulaire après un court délai
+    setTimeout(() => {
+      const form = document.getElementById('form-print-request');
+      if (form) form.reset();
+      
+      const docContainer = document.getElementById('document-rows-container');
+      if (docContainer) {
+        docContainer.innerHTML = '';
+        addDocumentRow();
+      }
+      
+      loadRequests();
+    }, 500);
   } catch (error) {
     console.error('[v0] Error submitting request:', error);
     alert('Erreur: ' + error.message);

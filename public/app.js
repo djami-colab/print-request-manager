@@ -7,9 +7,15 @@ let chartInstances = {};
 // Initialisation au chargement
 document.addEventListener('DOMContentLoaded', () => {
   initializeApp();
-  loadRequests();
-  loadStats();
   renderLucideIcons();
+  
+  // Charger les données après initialisation
+  setTimeout(() => {
+    loadRequests();
+    if (currentProfile === 'operateur') {
+      loadStats();
+    }
+  }, 100);
 });
 
 function initializeApp() {

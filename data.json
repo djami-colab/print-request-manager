@@ -139,6 +139,20 @@
       "status": "completed",
       "created_at": "2026-07-23T14:08:09.171Z",
       "completed_at": "2026-07-23T15:08:09.171Z"
+    },
+    {
+      "id": 11,
+      "request_number": "CIDI-2026-0011",
+      "requester_name": "Test",
+      "department": "Arch",
+      "project": "Test",
+      "request_type": "Appareil de tirage",
+      "reason": "Test",
+      "device_used": null,
+      "operator_name": null,
+      "status": "pending",
+      "created_at": "2026-07-23T14:14:59.691Z",
+      "completed_at": null
     }
   ],
   "requestItems": [
@@ -339,6 +353,17 @@
       "copies": 1,
       "surface_m2": 1.25,
       "total_pages": 5
+    },
+    {
+      "id": 19,
+      "request_id": 11,
+      "document_name": "Test",
+      "format": "A4",
+      "color_nb": "N&B",
+      "pages": 1,
+      "copies": 1,
+      "surface_m2": 0.0625,
+      "total_pages": 1
     }
   ],
   "users": [
@@ -359,6 +384,6 @@
       "created_at": "2026-07-23T14:08:09.170Z"
     }
   ],
-  "nextRequestId": 11,
+  "nextRequestId": 12,
   "nextUserId": 3
 }

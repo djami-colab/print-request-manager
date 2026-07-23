@@ -112,7 +112,10 @@ function switchTab(tabName) {
   }
   
   // Activer le bouton de menu
-  document.getElementById(`menu-${tabName}`).classList.add('active');
+  const menuBtn = document.getElementById(`menu-${tabName}`);
+  if (menuBtn) {
+    menuBtn.classList.add('active');
+  }
   
   // Mettre à jour le titre
   const titles = {
@@ -120,14 +123,19 @@ function switchTab(tabName) {
     'list': 'Suivi des bons de demande',
     'stats': 'Tableau de bord et statistiques'
   };
-  document.getElementById('page-title').textContent = titles[tabName];
   
-  if (tabName === 'new') {
-    document.getElementById('page-subtitle').textContent = 'Remplissez les détails pour générer votre bon de commande d\'impression.';
-  } else if (tabName === 'list') {
-    document.getElementById('page-subtitle').textContent = 'Consultez et gérez vos demandes d\'impression.';
-  } else if (tabName === 'stats') {
-    document.getElementById('page-subtitle').textContent = 'Visualisez les statistiques et la consommation d\'impression.';
+  const pageTitle = document.getElementById('page-title');
+  if (pageTitle) pageTitle.textContent = titles[tabName];
+  
+  const pageSubtitle = document.getElementById('page-subtitle');
+  if (pageSubtitle) {
+    if (tabName === 'new') {
+      pageSubtitle.textContent = 'Remplissez les détails pour générer votre bon de commande d\'impression.';
+    } else if (tabName === 'list') {
+      pageSubtitle.textContent = 'Consultez et gérez vos demandes d\'impression.';
+    } else if (tabName === 'stats') {
+      pageSubtitle.textContent = 'Visualisez les statistiques et la consommation d\'impression.';
+    }
   }
   
   // Recharger les données si nécessaire
@@ -158,6 +166,12 @@ async function submitPrintRequest(event) {
   // Récupérer les items (documents)
   const items = [];
   const itemsContainer = document.getElementById('document-rows-container');
+  
+  if (!itemsContainer) {
+    alert('Erreur: conteneur de documents non trouvé.');
+    return;
+  }
+  
   const itemRows = itemsContainer.querySelectorAll('tr');
   
   if (itemRows.length === 0) {
@@ -210,9 +224,20 @@ async function submitPrintRequest(event) {
     
     const data = await response.json();
     alert(`Demande créée avec succès!\nNuméro: ${data.request_number}`);
-    document.getElementById('form-print-request').reset();
-    document.getElementById('items-container').innerHTML = '';
-    addItemRow();
+    
+    // Réinitialiser le formulaire
+    const form = document.getElementById('form-print-request');
+    if (form) form.reset();
+    
+    // Vider et réinitialiser le conteneur de documents
+    const docContainer = document.getElementById('document-rows-container');
+    if (docContainer) {
+      docContainer.innerHTML = '';
+      addDocumentRow();
+    }
+    
+    // Recharger les demandes
+    loadRequests();
   } catch (error) {
     console.error('[v0] Error submitting request:', error);
     alert('Erreur: ' + error.message);
@@ -222,6 +247,12 @@ async function submitPrintRequest(event) {
 // Ajouter une ligne de document
 function addDocumentRow() {
   const container = document.getElementById('document-rows-container');
+  
+  if (!container) {
+    console.error('[v0] Document rows container not found');
+    return;
+  }
+  
   const rowIndex = container.querySelectorAll('tr').length + 1;
   
   const row = document.createElement('tr');
@@ -255,11 +286,19 @@ function addDocumentRow() {
 
 // Supprimer une ligne de document
 function removeDocumentRow(button) {
-  button.closest('tr').remove();
+  const row = button.closest('tr');
+  if (!row) return;
+  
+  row.remove();
+  
   // Renuméroter les lignes
-  const rows = document.getElementById('document-rows-container').querySelectorAll('tr');
+  const container = document.getElementById('document-rows-container');
+  if (!container) return;
+  
+  const rows = container.querySelectorAll('tr');
   rows.forEach((row, idx) => {
-    row.querySelector('td').textContent = idx + 1;
+    const firstCell = row.querySelector('td');
+    if (firstCell) firstCell.textContent = idx + 1;
   });
 }
 
@@ -282,11 +321,13 @@ async function loadRequests() {
     // Compter les demandes en attente
     const pendingCount = currentRequests.filter(r => r.status === 'pending').length;
     const badge = document.getElementById('badge-pending');
-    if (pendingCount > 0) {
-      badge.textContent = pendingCount;
-      badge.style.display = 'inline-block';
-    } else {
-      badge.style.display = 'none';
+    if (badge) {
+      if (pendingCount > 0) {
+        badge.textContent = pendingCount;
+        badge.style.display = 'inline-block';
+      } else {
+        badge.style.display = 'none';
+      }
     }
     
     renderRequests();
@@ -415,7 +456,9 @@ async function loadStats() {
     if (!response.ok) throw new Error('Erreur lors du chargement des stats');
     
     const data = await response.json();
-    renderStats(data);
+    if (data && data.global) {
+      renderStats(data);
+    }
   } catch (error) {
     console.error('[v0] Error loading stats:', error);
   }

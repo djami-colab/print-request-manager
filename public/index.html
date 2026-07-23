@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestion des Demandes d'Impression - CIDI</title>
+  
+  <!-- Polices Google -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Icônes Lucide -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Graphiques Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="print.css" media="print">
+</head>
+<body>
+  <div class="app-container no-print">
+    <!-- Barre latérale de navigation (Sidebar) -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-icon">
+          <i data-lucide="printer" class="icon-logo"></i>
+        </div>
+        <div class="logo-text">
+          <h1>CIDI</h1>
+          <span>Impression & Suivi</span>
+        </div>
+      </div>
+      
+      <div class="profile-switcher">
+        <span class="switcher-label">Profil Actuel :</span>
+        <div class="switcher-buttons">
+          <button id="btn-profile-demandeur" class="btn-switch active" onclick="switchProfile('demandeur')">
+            <i data-lucide="user"></i> Demandeur
+          </button>
+          <button id="btn-profile-operateur" class="btn-switch" onclick="switchProfile('operateur')">
+            <i data-lucide="wrench"></i> Opérateur
+          </button>
+        </div>
+      </div>
+      
+      <nav class="sidebar-menu">
+        <a href="#" id="menu-new" class="menu-item active" onclick="switchTab('new')">
+          <i data-lucide="file-plus"></i>
+          <span>Nouveau Bon</span>
+        </a>
+        <a href="#" id="menu-list" class="menu-item" onclick="switchTab('list')">
+          <i data-lucide="list-todo"></i>
+          <span>Suivi des Bons</span>
+          <span id="badge-pending" class="badge-alert" style="display: none;">0</span>
+        </a>
+        <a href="#" id="menu-stats" class="menu-item" onclick="switchTab('stats')">
+          <i data-lucide="bar-chart-3"></i>
+          <span>Tableau de Bord</span>
+        </a>
+      </nav>
+      
+      <div class="sidebar-footer">
+        <p>&copy; 2026 CIDI - Département d'Ingénierie</p>
+      </div>
+    </aside>
+
+    <!-- Contenu Principal -->
+    <main class="main-content">
+      <!-- En-tête -->
+      <header class="main-header">
+        <div class="header-title">
+          <h2 id="page-title">Créer une demande d'impression</h2>
+          <p id="page-subtitle">Remplissez les détails pour générer votre bon de commande d'impression.</p>
+        </div>
+        <div class="user-badge">
+          <div class="avatar">
+            <span id="user-avatar-initials">D</span>
+          </div>
+          <div class="user-info">
+            <strong id="user-profile-title">Demandeur CIDI</strong>
+            <span id="user-profile-sub">Accès Standard</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Section: NOUVEAU BON (DEMANDEUR) -->
+      <section id="tab-new" class="tab-content active-tab">
+        <form id="form-print-request" onsubmit="submitPrintRequest(event)">
+          <!-- Bloc 1: Demandeur -->
+          <div class="card form-card">
+            <div class="card-header">
+              <i data-lucide="user-check" class="header-icon"></i>
+              <h3>Informations sur le Demandeur</h3>
+            </div>
+            
+            <div class="form-grid-3">
+              <div class="form-group">
+                <label for="requester_name">Nom & Prénom <span class="required">*</span></label>
+                <input type="text" id="requester_name" placeholder="Ex: Mohamed Alami" required>
+              </div>
+              
+              <div class="form-group">
+                <label for="department">Département <span class="required">*</span></label>
+                <select id="department" required>
+                  <option value="" disabled selected>Choisir un département...</option>
+                  <option value="Architecture">Architecture</option>
+                  <option value="Structure">Structure</option>
+                  <option value="VRD">VRD</option>
+                  <option value="Essais">Essais</option>
+                  <option value="Équipements">Équipements</option>
+                  <option value="DEC">DEC</option>
+                  <option value="Coordination">Coordination</option>
+                  <option value="Finance">Finance</option>
+                  <option value="DAS">DAS</option>
+                </select>
+              </div>
+              
+              <div class="form-group">
+                <label for="project">Projet lié à cette impression <span class="required">*</span></label>
+                <input type="text" id="project" placeholder="Ex: Construction Pont Oued Sebou" required>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bloc 2: Pieces à imprimer -->
+          <div class="card form-card">
+            <div class="card-header flex-header">
+              <div class="header-title-flex">
+                <i data-lucide="files" class="header-icon"></i>
+                <h3>Pièces à Imprimer</h3>
+                <span class="subtitle-text">(Une ligne par document)</span>
+              </div>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="addDocumentRow()">
+                <i data-lucide="plus"></i> Ajouter un document
+              </button>
+            </div>
+            
+            <div class="table-responsive">
+              <table class="items-table" id="table-items">
+                <thead>
+                  <tr>
+                    <th style="width: 50px;">N°</th>
+                    <th>Désignation de la pièce / Document <span class="required">*</span></th>
+                    <th style="width: 120px;">Format <span class="required">*</span></th>
+                    <th style="width: 140px;">Couleur / N&B <span class="required">*</span></th>
+                    <th style="width: 100px;">Nb de pages <span class="required">*</span></th>
+                    <th style="width: 100px;">Nb de copies <span class="required">*</span></th>
+                    <th style="width: 50px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="document-rows-container">
+                  <!-- Les lignes de documents seront insérées ici en JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Bloc 3: Type & Motif -->
+          <div class="form-grid-2">
+            <!-- Type de moyen demandé -->
+            <div class="card form-card">
+              <div class="card-header">
+                <i data-lucide="sliders" class="header-icon"></i>
+                <h3>Type de Moyen Demandé <span class="required">*</span></h3>
+              </div>
+              
+              <div class="checkbox-group-vertical">
+                <label class="checkbox-container">
+                  <input type="checkbox" name="request_type" value="Appareil de tirage de plans">
+                  <span class="checkmark"></span>
+                  Appareil de tirage de plans (Traceurs)
+                </label>
+                
+                <label class="checkbox-container">
+                  <input type="checkbox" name="request_type" value="Appareil photocopieur">
+                  <span class="checkmark"></span>
+                  Appareil photocopieur
+                </label>
+                
+                <label class="checkbox-container">
+                  <input type="checkbox" name="request_type" value="Appareil relieur">
+                  <span class="checkmark"></span>
+                  Appareil relieur
+                </label>
+                
+                <label class="checkbox-container">
+                  <input type="checkbox" name="request_type" value="Appareil d'impression">
+                  <span class="checkmark"></span>
+                  Appareil d'impression (Imprimantes de bureau)
+                </label>
+              </div>
+            </div>
+
+            <!-- Motif -->
+            <div class="card form-card">
+              <div class="card-header">
+                <i data-lucide="help-circle" class="header-icon"></i>
+                <h3>Motif si les pièces n'appartiennent pas au Centre</h3>
+              </div>
+              <div class="form-group">
+                <textarea id="reason" placeholder="Veuillez justifier pourquoi ces documents doivent être imprimés ici s'ils n'appartiennent pas au centre..." rows="4"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bouton de validation -->
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-lg">
+              <i data-lucide="save"></i> Enregistrer et Générer le Bon
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Section: SUIVI DES BONS -->
+      <section id="tab-list" class="tab-content">
+        <!-- Filtres -->
+        <div class="card filter-card">
+          <div class="filter-grid">
+            <div class="form-group">
+              <label for="filter-search">Recherche</label>
+              <div class="input-icon-wrapper">
+                <i data-lucide="search"></i>
+                <input type="text" id="filter-search" placeholder="Nom, Projet, N° Bon..." oninput="fetchRequests()">
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label for="filter-status">Statut</label>
+              <select id="filter-status" onchange="fetchRequests()">
+                <option value="">Tous les statuts</option>
+                <option value="pending">En attente (Opérateur)</option>
+                <option value="completed">Terminé (Traité)</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label for="filter-dept">Département</label>
+              <select id="filter-dept" onchange="fetchRequests()">
+                <option value="">Tous les départements</option>
+                <option value="Architecture">Architecture</option>
+                <option value="Structure">Structure</option>
+                <option value="VRD">VRD</option>
+                <option value="Essais">Essais</option>
+                <option value="Équipements">Équipements</option>
+                <option value="DEC">DEC</option>
+                <option value="Coordination">Coordination</option>
+                <option value="Finance">Finance</option>
+                <option value="DAS">DAS</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label>Période</label>
+              <div class="date-range-inputs">
+                <input type="date" id="filter-date-start" onchange="fetchRequests()">
+                <span>au</span>
+                <input type="date" id="filter-date-end" onchange="fetchRequests()">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Table des Bons -->
+        <div class="card list-card">
+          <div class="card-header flex-header">
+            <h3>Liste des Bons de Demande</h3>
+            <div class="actions-flex">
+              <button class="btn btn-secondary btn-sm" onclick="clearFilters()">
+                <i data-lucide="refresh-cw"></i> Réinitialiser
+              </button>
+              <button class="btn btn-excel btn-sm" onclick="exportToExcel()">
+                <i data-lucide="file-spreadsheet"></i> Exporter sous Excel
+              </button>
+            </div>
+          </div>
+          
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>N° Bon</th>
+                  <th>Date Création</th>
+                  <th>Demandeur</th>
+                  <th>Département</th>
+                  <th>Projet</th>
+                  <th>Pièces</th>
+                  <th>Pages Totales</th>
+                  <th>Surface Totale</th>
+                  <th>Statut</th>
+                  <th style="width: 150px; text-align: center;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="requests-list-container">
+                <!-- Rempli par JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section: TABLEAU DE BORD (STATISTIQUES) -->
+      <section id="tab-stats" class="tab-content">
+        <!-- Cartes d'indicateurs (KPIs) -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-icon icon-blue">
+              <i data-lucide="file-text"></i>
+            </div>
+            <div class="kpi-data">
+              <span class="kpi-title">Total Demandes</span>
+              <strong id="kpi-total-requests" class="kpi-value">0</strong>
+            </div>
+          </div>
+          
+          <div class="kpi-card">
+            <div class="kpi-icon icon-yellow">
+              <i data-lucide="clock"></i>
+            </div>
+            <div class="kpi-data">
+              <span class="kpi-title">Bons en Attente</span>
+              <strong id="kpi-pending-requests" class="kpi-value">0</strong>
+            </div>
+          </div>
+          
+          <div class="kpi-card">
+            <div class="kpi-icon icon-green">
+              <i data-lucide="book-open"></i>
+            </div>
+            <div class="kpi-data">
+              <span class="kpi-title">Pages Imprimées</span>
+              <strong id="kpi-total-pages" class="kpi-value">0</strong>
+            </div>
+          </div>
+          
+          <div class="kpi-card">
+            <div class="kpi-icon icon-purple">
+              <i data-lucide="layers"></i>
+            </div>
+            <div class="kpi-data">
+              <span class="kpi-title">Papier Consommé</span>
+              <strong id="kpi-total-surface" class="kpi-value">0.00 m²</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Graphiques -->
+        <div class="charts-grid-top">
+          <!-- Consommation papier par departement -->
+          <div class="card chart-card">
+            <div class="card-header">
+              <h3>Consommation de Papier par Département (m²)</h3>
+            </div>
+            <div class="chart-container">
+              <canvas id="chart-dept-surface"></canvas>
+            </div>
+          </div>
+          
+          <!-- Repartition demandes par departement -->
+          <div class="card chart-card">
+            <div class="card-header">
+              <h3>Nombre de Demandes par Département</h3>
+            </div>
+            <div class="chart-container flex-center">
+              <canvas id="chart-dept-requests"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="charts-grid-bottom">
+          <!-- Evolution de la consommation -->
+          <div class="card chart-card">
+            <div class="card-header">
+              <h3>Évolution Quotidienne de la Consommation (m²)</h3>
+            </div>
+            <div class="chart-container">
+              <canvas id="chart-timeline"></canvas>
+            </div>
+          </div>
+
+          <!-- Appareils les plus utilises -->
+          <div class="card chart-card">
+            <div class="card-header">
+              <h3>Consommation par Appareil Utilisé (m²)</h3>
+            </div>
+            <div class="chart-container">
+              <canvas id="chart-devices"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Top Consommateurs (Tableau) -->
+        <div class="card dashboard-table-card">
+          <div class="card-header">
+            <h3>Top 5 des Utilisateurs les plus Consommateurs</h3>
+          </div>
+          <div class="table-responsive">
+            <table class="stats-table">
+              <thead>
+                <tr>
+                  <th>Rang</th>
+                  <th>Nom du Demandeur</th>
+                  <th>Département</th>
+                  <th>Nombre de Demandes</th>
+                  <th>Pages Imprimées</th>
+                  <th>Consommation de Papier (m²)</th>
+                </tr>
+              </thead>
+              <tbody id="top-users-container">
+                <!-- Rempli par JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- MODALE: VALIDATION OPERATEUR -->
+  <div id="modal-operator" class="modal no-print">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Traitement du Bon d'Impression</h2>
+        <button class="btn-close" onclick="closeOperatorModal()">&times;</button>
+      </div>
+      <form id="form-operator-validation" onsubmit="submitOperatorValidation(event)">
+        <input type="hidden" id="modal-req-id">
+        <div class="modal-body">
+          <div class="request-summary-box">
+            <p><strong>N° de Bon :</strong> <span id="modal-summary-num">-</span></p>
+            <p><strong>Demandeur :</strong> <span id="modal-summary-name">-</span> (<span id="modal-summary-dept">-</span>)</p>
+            <p><strong>Projet :</strong> <span id="modal-summary-project">-</span></p>
+            <p><strong>Moyen requis :</strong> <span id="modal-summary-type">-</span></p>
+          </div>
+          
+          <div class="form-group">
+            <label for="operator-name-select">Nom de l'Opérateur <span class="required">*</span></label>
+            <input type="text" id="operator-name-select" placeholder="Saisir votre nom" required>
+          </div>
+
+          <div class="form-group">
+            <label>Appareil Utilisé pour cette tâche <span class="required">*</span></label>
+            <div class="devices-grid">
+              <label class="device-radio-container">
+                <input type="radio" name="device_used" value="Traceur T1600" required>
+                <div class="device-box">
+                  <i data-lucide="printer"></i>
+                  <span>Traceur T1600</span>
+                </div>
+              </label>
+              
+              <label class="device-radio-container">
+                <input type="radio" name="device_used" value="Traceur T1300">
+                <div class="device-box">
+                  <i data-lucide="printer"></i>
+                  <span>Traceur T1300</span>
+                </div>
+              </label>
+
+              <label class="device-radio-container">
+                <input type="radio" name="device_used" value="Traceur Epson 5600">
+                <div class="device-box">
+                  <i data-lucide="printer"></i>
+                  <span>Traceur Epson 5600</span>
+                </div>
+              </label>
+
+              <label class="device-radio-container">
+                <input type="radio" name="device_used" value="Kyocera 7003i">
+                <div class="device-box">
+                  <i data-lucide="copy"></i>
+                  <span>Kyocera 7003i</span>
+                </div>
+              </label>
+
+              <label class="device-radio-container">
+                <input type="radio" name="device_used" value="Traceur Xerox">
+                <div class="device-box">
+                  <i data-lucide="printer"></i>
+                  <span>Traceur Xerox</span>
+                </div>
+              </label>
+
+              <label class="device-radio-container">
+                <input type="radio" name="device_used" value="Scanner Kyocera">
+                <div class="device-box">
+                  <i data-lucide="scan"></i>
+                  <span>Scanner Kyocera</span>
+                </div>
+              </label>
+
+              <label class="device-radio-container">
+                <input type="radio" name="device_used" value="Relieuse">
+                <div class="device-box">
+                  <i data-lucide="book-marked"></i>
+                  <span>Relieuse</span>
+                </div>
+              </label>
+
+              <label class="device-radio-container">
+                <input type="radio" name="device_used" value="Photocopieuse Xerox">
+                <div class="device-box">
+                  <i data-lucide="copy"></i>
+                  <span>Photocopieuse Xerox</span>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeOperatorModal()">Annuler</button>
+          <button type="submit" class="btn btn-primary">Valider et Clôturer le Bon</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- NOTIFICATION CONTAINER -->
+  <div id="toast" class="toast no-print">
+    <i data-lucide="info" id="toast-icon"></i>
+    <span id="toast-message">Message de notification</span>
+  </div>
+
+  <!-- ==================== ZONE D'IMPRESSION (MASQUÉE SUR ÉCRAN) ==================== -->
+  <div class="print-form-wrapper print-only">
+    <div class="print-header">
+      <div class="print-header-left">
+        <strong>Centre de l'Ingénierie et de Développement<br>des Infrastructures</strong>
+      </div>
+      <div class="print-header-center">
+        <h2>BON DE DEMANDE DE<br>SERVICE IMPRESSION</h2>
+      </div>
+      <div class="print-header-right">
+        <div class="print-info-row"><strong>N° :</strong> <span id="print-bon-number">...........................</span></div>
+        <div class="print-info-row"><strong>Date :</strong> <span id="print-bon-date">.... / .... / ........</span></div>
+      </div>
+    </div>
+
+    <!-- Section DEMANDEUR -->
+    <div class="print-section">
+      <div class="print-section-title">DEMANDEUR</div>
+      <table class="print-fields-table">
+        <tr>
+          <td style="width: 15%; font-weight: bold;">Nom & prénom</td>
+          <td id="print-requester-name" style="width: 85%;">..................................................................................................................................</td>
+        </tr>
+        <tr>
+          <td style="font-weight: bold;">Département</td>
+          <td>
+            <div class="print-checkboxes-inline">
+              <label class="print-checkbox-lbl"><span id="pcheck-dept-Architecture" class="print-box-chk">&#9633;</span> Architecture</label>
+              <label class="print-checkbox-lbl"><span id="pcheck-dept-Structure" class="print-box-chk">&#9633;</span> Structure</label>
+              <label class="print-checkbox-lbl"><span id="pcheck-dept-VRD" class="print-box-chk">&#9633;</span> VRD</label>
+              <label class="print-checkbox-lbl"><span id="pcheck-dept-Essais" class="print-box-chk">&#9633;</span> Essais</label>
+              <label class="print-checkbox-lbl"><span id="pcheck-dept-Équipements" class="print-box-chk">&#9633;</span> Équipements</label>
+              <label class="print-checkbox-lbl"><span id="pcheck-dept-DEC" class="print-box-chk">&#9633;</span> DEC</label>
+              <label class="print-checkbox-lbl"><span id="pcheck-dept-Coordination" class="print-box-chk">&#9633;</span> Coordination</label>
+              <label class="print-checkbox-lbl"><span id="pcheck-dept-Finance" class="print-box-chk">&#9633;</span> Finance</label>
+              <label class="print-checkbox-lbl"><span id="pcheck-dept-DAS" class="print-box-chk">&#9633;</span> DAS</label>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td style="font-weight: bold;">Projet lié à cette impression</td>
+          <td id="print-project-name">..................................................................................................................................</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Section PIECES A IMPRIMER -->
+    <div class="print-section">
+      <div class="print-section-title">PIECES A IMPRIMER (une ligne par pièce)</div>
+      <table class="print-items-table">
+        <thead>
+          <tr>
+            <th style="width: 5%;">N°</th>
+            <th style="width: 45%;">Désignation de la pièce / document</th>
+            <th style="width: 12%;">Format</th>
+            <th style="width: 13%;">Couleur / N&B</th>
+            <th style="width: 12%;">Nb de pages</th>
+            <th style="width: 13%;">Nb de copies</th>
+          </tr>
+        </thead>
+        <tbody id="print-items-body">
+          <!-- 10 lignes fixes seront inserees ici par JS, dont certaines remplies, les autres vides -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Section TYPE DE MOYEN DEMANDE -->
+    <div class="print-section">
+      <div class="print-section-title">TYPE DE MOYEN DEMANDE</div>
+      <div class="print-checkbox-box">
+        <div class="print-checkboxes-grid">
+          <label class="print-checkbox-lbl"><span id="pcheck-moyen-tirage" class="print-box-chk">&#9633;</span> Appareil de tirage de plans</label>
+          <label class="print-checkbox-lbl"><span id="pcheck-moyen-photocopieur" class="print-box-chk">&#9633;</span> Appareil photocopieur</label>
+          <label class="print-checkbox-lbl"><span id="pcheck-moyen-relieur" class="print-box-chk">&#9633;</span> Appareil relieur</label>
+          <label class="print-checkbox-lbl"><span id="pcheck-moyen-impression" class="print-box-chk">&#9633;</span> Appareil d'impression</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section MOTIF -->
+    <div class="print-section">
+      <div class="print-section-title">MOTIF SI LES PIECES N'APPARTIENNENT PAS AU CENTRE</div>
+      <div class="print-textarea-box" id="print-reason-box">
+        &nbsp;
+      </div>
+    </div>
+
+    <!-- Section APPAREIL UTILISE -->
+    <div class="print-section">
+      <div class="print-section-title">APPAREIL UTILISE</div>
+      <div class="print-checkbox-box">
+        <div class="print-checkboxes-grid-2">
+          <label class="print-checkbox-lbl"><span id="pcheck-device-T1600" class="print-box-chk">&#9633;</span> Traceur T1600</label>
+          <label class="print-checkbox-lbl"><span id="pcheck-device-T1300" class="print-box-chk">&#9633;</span> Traceur T1300</label>
+          <label class="print-checkbox-lbl"><span id="pcheck-device-E5600" class="print-box-chk">&#9633;</span> Traceur Epson 5600</label>
+          <label class="print-checkbox-lbl"><span id="pcheck-device-K7003" class="print-box-chk">&#9633;</span> Kyocera 7003i</label>
+          <label class="print-checkbox-lbl"><span id="pcheck-device-XeroxTraceur" class="print-box-chk">&#9633;</span> Traceur Xerox</label>
+          <label class="print-checkbox-lbl"><span id="pcheck-device-Scanner" class="print-box-chk">&#9633;</span> Scanner Kyocera</label>
+          <label class="print-checkbox-lbl"><span id="pcheck-device-Relieuse" class="print-box-chk">&#9633;</span> Relieuse</label>
+          <label class="print-checkbox-lbl"><span id="pcheck-device-XeroxPhoto" class="print-box-chk">&#9633;</span> Photocopieuse Xerox</label>
+        </div>
+        <div style="margin-top: 10px; border-top: 1px dashed #ccc; padding-top: 5px; font-size: 10px;">
+          <strong>Opérateur de traitement :</strong> <span id="print-operator-name">...................................................</span>
+          <span style="float: right;"><strong>Date de traitement :</strong> <span id="print-completion-date">.... / .... / ........</span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section SIGNATURES -->
+    <div class="print-signatures-grid">
+      <div class="print-signature-box">
+        <strong>Visa du demandeur</strong>
+        <div style="height: 60px;"></div>
+      </div>
+      <div class="print-signature-box">
+        <strong>Visa du chef de département</strong>
+        <div style="height: 60px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

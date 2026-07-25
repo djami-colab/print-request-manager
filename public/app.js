@@ -21,6 +21,14 @@ document.addEventListener('DOMContentLoaded', () => {
 function initializeApp() {
   console.log('[v0] App initialized');
   
+  // Check if on public page - skip auth for public bon page
+  const isPublicPage = window.location.pathname.includes('bon-public');
+  
+  if (isPublicPage) {
+    // Skip authentication for public page
+    return;
+  }
+  
   // Vérifier l'authentification
   const token = localStorage.getItem('token');
   const userStr = localStorage.getItem('user');

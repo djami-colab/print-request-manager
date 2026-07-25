@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Demande d'Impression - CIDI</title>
+  
+  <!-- Polices Google -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Icônes Lucide -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="print.css" media="print">
+  
+  <style>
+    /* Override sidebar to hide it in public version */
+    .sidebar {
+      display: none !important;
+    }
+    
+    /* Adjust main content to full width */
+    .app-container {
+      display: flex;
+      width: 100%;
+    }
+    
+    .main-content {
+      flex: 1;
+      width: 100%;
+      margin-left: 0 !important;
+    }
+    
+    /* Hide user profile and logout in header */
+    .header-actions .user-badge {
+      display: none !important;
+    }
+    
+    .header-actions #btn-logout {
+      display: none !important;
+    }
+    
+    /* Public header styling */
+    .main-header {
+      padding: 24px 32px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-bottom: none;
+    }
+    
+    .main-header .header-title h2 {
+      color: white;
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+    
+    .main-header .header-title p {
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 14px;
+    }
+    
+    /* New Bon button styling */
+    .public-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-left: auto;
+    }
+    
+    .btn-new-bon {
+      background: white;
+      color: #667eea;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s ease;
+    }
+    
+    .btn-new-bon:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    }
+    
+    /* Hide other tabs and sections */
+    #tab-list,
+    #tab-stats {
+      display: none !important;
+    }
+    
+    /* Tab sections - only show new bon tab */
+    #tab-new {
+      display: block !important;
+    }
+    
+    /* Main content padding adjustment */
+    .main-content {
+      padding: 32px;
+      background: #f8f9fa;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container no-print">
+    <!-- Contenu Principal -->
+    <main class="main-content">
+      <!-- En-tête Public -->
+      <header class="main-header">
+        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+          <div class="header-title">
+            <h2>Portail de Demande d'Impression</h2>
+            <p>Remplissez le formulaire pour générer votre bon de demande d'impression.</p>
+          </div>
+          <div class="public-header-actions">
+            <button class="btn-new-bon" onclick="resetForm()">
+              <i data-lucide="file-plus" style="width: 18px; height: 18px;"></i>
+              Nouveau Bon
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Section: NOUVEAU BON (PUBLIC) -->
+      <section id="tab-new" class="tab-content active-tab">
+        <form id="form-print-request" onsubmit="submitPrintRequest(event)">
+          <!-- Bloc 1: Demandeur -->
+          <div class="card form-card">
+            <div class="card-header">
+              <i data-lucide="user-check" class="header-icon"></i>
+              <h3>Informations sur le Demandeur</h3>
+            </div>
+            
+            <div class="form-grid-3">
+              <div class="form-group">
+                <label for="requester_name">Nom & Prénom <span class="required">*</span></label>
+                <input type="text" id="requester_name" placeholder="Ex: Mohamed Alami" required>
+              </div>
+              
+              <div class="form-group">
+                <label for="department">Département <span class="required">*</span></label>
+                <select id="department" required>
+                  <option value="" disabled selected>Choisir un département...</option>
+                  <option value="Architecture">Architecture</option>
+                  <option value="Structure">Structure</option>
+                  <option value="VRD">VRD</option>
+                  <option value="Essais">Essais</option>
+                  <option value="Équipements">Équipements</option>
+                  <option value="DEC">DEC</option>
+                  <option value="Coordination">Coordination</option>
+                  <option value="Finance">Finance</option>
+                  <option value="DAS">DAS</option>
+                </select>
+              </div>
+              
+              <div class="form-group">
+                <label for="project">Projet lié à cette impression <span class="required">*</span></label>
+                <input type="text" id="project" placeholder="Ex: Construction Pont Oued Sebou" required>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bloc 2: Pieces à imprimer -->
+          <div class="card form-card">
+            <div class="card-header flex-header">
+              <div class="header-title-flex">
+                <i data-lucide="files" class="header-icon"></i>
+                <h3>Pièces à Imprimer</h3>
+                <span class="subtitle-text">(une ligne par pièce)</span>
+              </div>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="addDocumentRow()">
+                <i data-lucide="plus"></i> Ajouter un document
+              </button>
+            </div>
+            
+            <div class="table-responsive">
+              <table class="items-table" id="table-items">
+                <thead>
+                  <tr>
+                    <th style="width: 50px;">N°</th>
+                    <th>Désignation de la pièce / Document <span class="required">*</span></th>
+                    <th style="width: 120px;">Format <span class="required">*</span></th>
+                    <th style="width: 140px;">Couleur / N&B <span class="required">*</span></th>
+                    <th style="width: 100px;">Nb de pages <span class="required">*</span></th>
+                    <th style="width: 100px;">Nb de copies <span class="required">*</span></th>
+                    <th style="width: 50px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="document-rows-container">
+                  <!-- Les lignes de documents seront insérées ici en JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Bloc 3: Type & Motif -->
+          <div class="form-grid-2">
+            <!-- Type de moyen demandé -->
+            <div class="card form-card">
+              <div class="card-header">
+                <i data-lucide="sliders" class="header-icon"></i>
+                <h3>Type de Moyen Demandé <span class="required">*</span></h3>
+              </div>
+              
+              <div class="checkbox-group-vertical">
+                <label class="checkbox-container">
+                  <input type="checkbox" name="request_type" value="Appareil de tirage de plans">
+                  <span class="checkmark"></span>
+                  Appareil de tirage de plans
+                </label>
+                
+                <label class="checkbox-container">
+                  <input type="checkbox" name="request_type" value="Appareil photocopieur">
+                  <span class="checkmark"></span>
+                  Appareil photocopieur
+                </label>
+                
+                <label class="checkbox-container">
+                  <input type="checkbox" name="request_type" value="Appareil relieur">
+                  <span class="checkmark"></span>
+                  Appareil relieur
+                </label>
+                
+                <label class="checkbox-container">
+                  <input type="checkbox" name="request_type" value="Appareil d'impression">
+                  <span class="checkmark"></span>
+                  Appareil d'impression
+                </label>
+              </div>
+            </div>
+
+            <!-- Motif -->
+            <div class="card form-card">
+              <div class="card-header">
+                <i data-lucide="help-circle" class="header-icon"></i>
+                <h3>Motif si les pièces n'appartiennent pas au Centre</h3>
+              </div>
+              <div class="form-group">
+                <textarea id="reason" placeholder="Veuillez justifier pourquoi ces documents doivent être imprimés ici s'ils n'appartiennent pas au centre..." rows="4"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bloc 4: Appareil Utilisé -->
+          <div class="card form-card">
+            <div class="card-header">
+              <i data-lucide="cpu" class="header-icon"></i>
+              <h3>Appareil Utilisé</h3>
+            </div>
+            <div class="form-group">
+              <label>Sélectionner le(s) appareil(s)</label>
+              <div class="checkbox-section" style="display: flex; flex-direction: column; gap: 10px;">
+                <div class="checkbox-item">
+                  <input type="checkbox" name="device" value="Traceur T1600" id="device_1">
+                  <label for="device_1" style="margin-left: 8px; cursor: pointer; font-weight: normal;">Traceur T1600</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" name="device" value="Traceur T1300" id="device_2">
+                  <label for="device_2" style="margin-left: 8px; cursor: pointer; font-weight: normal;">Traceur T1300</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" name="device" value="Traceur Epson 5600" id="device_3">
+                  <label for="device_3" style="margin-left: 8px; cursor: pointer; font-weight: normal;">Traceur Epson 5600</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" name="device" value="Altalink Xerox" id="device_4">
+                  <label for="device_4" style="margin-left: 8px; cursor: pointer; font-weight: normal;">Altalink Xerox</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" name="device" value="Kyocera 7003i" id="device_5">
+                  <label for="device_5" style="margin-left: 8px; cursor: pointer; font-weight: normal;">Kyocera 7003i</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" name="device" value="Scanner Contex" id="device_6">
+                  <label for="device_6" style="margin-left: 8px; cursor: pointer; font-weight: normal;">Scanner Contex</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" name="device" value="Relieuse" id="device_7">
+                  <label for="device_7" style="margin-left: 8px; cursor: pointer; font-weight: normal;">Relieuse</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" name="device" value="Photocopieuse Xerox" id="device_8">
+                  <label for="device_8" style="margin-left: 8px; cursor: pointer; font-weight: normal;">Photocopieuse Xerox</label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bloc 5: Opérateur -->
+          <div class="card form-card">
+            <div class="card-header">
+              <i data-lucide="user" class="header-icon"></i>
+              <h3>Opérateur de Tirage</h3>
+            </div>
+            <div class="form-group">
+              <label for="operator_name">Nom de l'opérateur</label>
+              <input type="text" id="operator_name" placeholder="Ex: Mohamed Karim">
+            </div>
+          </div>
+
+          <!-- Bouton de validation -->
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-lg">
+              <i data-lucide="print"></i> Générer le Bon d'Impression
+            </button>
+          </div>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <!-- MODALE: BON GENERÉ -->
+  <div id="modal-bon-preview" class="modal no-print" style="display: none;">
+    <div class="modal-content" style="width: 90%; height: 90%; max-width: 1200px; padding: 0; display: flex; flex-direction: column;">
+      <div class="modal-header">
+        <h2>Bon d'Impression Généré</h2>
+        <button onclick="closeBonPreview()" class="modal-close" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #666;">×</button>
+      </div>
+      <div style="flex: 1; overflow: auto;">
+        <iframe id="bon-preview-iframe" style="width: 100%; height: 100%; border: none;"></iframe>
+      </div>
+      <div class="modal-footer" style="padding: 16px 24px; border-top: 1px solid #ddd; text-align: right;">
+        <button onclick="closeBonPreview()" class="btn btn-secondary">Fermer</button>
+        <button onclick="printBon()" class="btn btn-primary" style="margin-left: 10px;">
+          <i data-lucide="printer" style="width: 16px; height: 16px;"></i> Imprimer
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    // Initialize the form with an empty row
+    document.addEventListener('DOMContentLoaded', function() {
+      addDocumentRow();
+      lucide.createIcons();
+    });
+
+    // Reset form function for the "Nouveau Bon" button
+    function resetForm() {
+      document.getElementById('form-print-request').reset();
+      // Clear all document rows except the first one
+      const container = document.getElementById('document-rows-container');
+      while (container.children.length > 1) {
+        container.removeChild(container.lastChild);
+      }
+      addDocumentRow();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      lucide.createIcons();
+    }
+
+    // Override closeBonPreview to work in public mode
+    function closeBonPreview() {
+      const modal = document.getElementById('modal-bon-preview');
+      if (modal) {
+        modal.style.display = 'none';
+      }
+      // Return to form with scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Override printBon for public page
+    function printBon() {
+      const iframe = document.getElementById('bon-preview-iframe');
+      if (iframe) {
+        iframe.contentWindow.print();
+      }
+    }
+  </script>
+</body>
+</html>

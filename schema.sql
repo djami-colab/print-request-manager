@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS `projets` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `intitule` VARCHAR(255) NOT NULL UNIQUE,
   `unite` VARCHAR(100) DEFAULT 'CIDI',
+  `annee` INT DEFAULT NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   INDEX `idx_intitule` (`intitule`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

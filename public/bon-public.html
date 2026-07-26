@@ -165,7 +165,19 @@
               
               <div class="form-group">
                 <label for="project">Projet lié à cette impression <span class="required">*</span></label>
-                <input type="text" id="project" placeholder="Ex: Construction Pont Oued Sebou" required>
+                <div class="autocomplete-container">
+                  <input 
+                    type="text" 
+                    id="project" 
+                    class="autocomplete-input"
+                    placeholder="Tapez le nom du projet..." 
+                    required
+                    oninput="handleProjectInput(event)"
+                    onfocus="showProjectDropdown(event)"
+                    onblur="hideProjectDropdown()"
+                    onkeydown="handleProjectKeydown(event)">
+                  <div id="project-dropdown" class="autocomplete-dropdown"></div>
+                </div>
               </div>
             </div>
           </div>
@@ -342,6 +354,7 @@
   <script>
     // Initialize the form with an empty row
     document.addEventListener('DOMContentLoaded', function() {
+      loadProjects();
       addDocumentRow();
       lucide.createIcons();
     });

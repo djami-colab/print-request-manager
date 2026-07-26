@@ -8,7 +8,7 @@ async function setupDatabase() {
   
   const host = process.env.DB_HOST || 'localhost';
   const user = process.env.DB_USER || 'root';
-  const password = process.env.DB_PASSWORD || 'root';
+  const password = process.env.DB_PASSWORD || '';
   const database = process.env.DB_NAME || 'print_request_db';
 
   try {

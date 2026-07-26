@@ -1,333 +1,83 @@
-const fs = require('fs');
-const path = require('path');
+const mysql = require('mysql2/promise');
+require('dotenv').config();
 
-const DB_FILE = path.join(__dirname, 'data.json');
+// Configuration MySQL
+const pool = mysql.createPool({
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || 'root',
+  database: process.env.DB_NAME || 'print_request_db',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
+});
 
-// Structure de la base de données en mémoire
-let db = {
-  requests: [],
-  requestItems: [],
-  users: [],
-  nextRequestId: 1,
-  nextUserId: 1
-};
-
-// Charger les données depuis le fichier
-function loadDatabase() {
+// Initialiser la base de données
+async function loadDatabase() {
   try {
-    if (fs.existsSync(DB_FILE)) {
-      const data = fs.readFileSync(DB_FILE, 'utf-8');
-      db = JSON.parse(data);
-      console.log('Base de données chargée depuis le fichier.');
-    } else {
-      // Initialiser avec des données de démonstration
-      seedDemoData();
-      saveDatabase();
-    }
+    const connection = await pool.getConnection();
+    console.log('Connexion MySQL réussie');
+    connection.release();
   } catch (error) {
-    console.error('Erreur lors du chargement de la base de données:', error);
-    seedDemoData();
+    console.error('Erreur de connexion MySQL:', error.message);
+    throw error;
   }
 }
 
-// Sauvegarder les données
-function saveDatabase() {
+// === GESTION DES UTILISATEURS ===
+
+// Fonction de connexion
+async function login(email, password) {
   try {
-    fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), 'utf-8');
-  } catch (error) {
-    console.error('Erreur lors de la sauvegarde:', error);
-  }
-}
-
-// Données de démonstration
-function seedDemoData() {
-  if (db.requests.length > 0) return;
-
-  // Ajouter des utilisateurs de démonstration
-  db.users = [
-    {
-      id: db.nextUserId++,
-      name: 'Demandeur Demo',
-      email: 'demo@demandeur.com',
-      password: 'password',
-      profile: 'demandeur',
-      created_at: new Date().toISOString()
-    },
-    {
-      id: db.nextUserId++,
-      name: 'Opérateur Demo',
-      email: 'demo@operateur.com',
-      password: 'password',
-      profile: 'operateur',
-      created_at: new Date().toISOString()
-    }
-  ];
-  
-  const departments = ['Architecture', 'Structure', 'VRD', 'Essais', 'Équipements', 'DEC', 'Coordination', 'Finance', 'DAS'];
-  const names = ['Jean Dupont', 'Marie Curie', 'Pierre Martin', 'Sophie Bernard', 'Thomas Dubois'];
-  const projects = ['Tour Signal', 'Pont de l\'Avenir', 'Aménagement VRD'];
-  const requestTypes = ['Appareil de tirage de plans', 'Appareil photocopieur', 'Appareil d\'impression'];
-  const devices = ['Traceur T1600', 'Traceur T1300', 'Kyocera 7003i'];
-  const operators = ['Karim', 'Hassan', 'Rachid'];
-  const formats = ['A4', 'A3', 'A2', 'A1', 'A0'];
-  const colors = ['Couleur', 'N&B'];
-  const surfaceMap = { 'A4': 0.0625, 'A3': 0.125, 'A2': 0.25, 'A1': 0.5, 'A0': 1.0 };
-  
-  const now = new Date();
-  
-  for (let i = 1; i <= 10; i++) {
-    const createdDate = new Date();
-    createdDate.setDate(now.getDate() - (10 - i) * 2);
-    
-    const reqNum = `CIDI-${createdDate.getFullYear()}-${String(i).padStart(4, '0')}`;
-    const isCompleted = Math.random() < 0.7;
-    const compDate = isCompleted ? new Date(createdDate.getTime() + 3600 * 1000) : null;
-    
-    const request = {
-      id: db.nextRequestId++,
-      request_number: reqNum,
-      requester_name: names[Math.floor(Math.random() * names.length)],
-      department: departments[Math.floor(Math.random() * departments.length)],
-      project: projects[Math.floor(Math.random() * projects.length)],
-      request_type: requestTypes[Math.floor(Math.random() * requestTypes.length)],
-      reason: Math.random() > 0.7 ? 'Documents requis pour validation externe' : null,
-      device_used: isCompleted ? devices[Math.floor(Math.random() * devices.length)] : null,
-      operator_name: isCompleted ? operators[Math.floor(Math.random() * operators.length)] : null,
-      status: isCompleted ? 'completed' : 'pending',
-      created_at: createdDate.toISOString(),
-      completed_at: compDate ? compDate.toISOString() : null
-    };
-    
-    db.requests.push(request);
-    
-    // Ajouter 1-3 items
-    const itemCount = Math.floor(Math.random() * 3) + 1;
-    for (let j = 1; j <= itemCount; j++) {
-      const fmt = formats[Math.floor(Math.random() * formats.length)];
-      const pages = Math.floor(Math.random() * 10) + 1;
-      const copies = Math.floor(Math.random() * 3) + 1;
-      
-      db.requestItems.push({
-        id: db.requestItems.length + 1,
-        request_id: request.id,
-        document_name: `Document_${j}_${request.project.replace(/\s+/g, '_')}.pdf`,
-        format: fmt,
-        color_nb: colors[Math.floor(Math.random() * colors.length)],
-        pages: pages,
-        copies: copies,
-        surface_m2: pages * copies * surfaceMap[fmt],
-        total_pages: pages * copies
-      });
-    }
-  }
-}
-
-// Créer une nouvelle demande
-function createRequest(data) {
-  const now = new Date();
-  const year = now.getFullYear();
-  const count = db.requests.filter(r => {
-    const createdYear = new Date(r.created_at).getFullYear();
-    return createdYear === year;
-  }).length + 1;
-  
-  const request = {
-    id: db.nextRequestId++,
-    request_number: `CIDI-${year}-${String(count).padStart(4, '0')}`,
-    requester_name: data.requester_name,
-    department: data.department,
-    project: data.project,
-    request_type: data.request_type,
-    reason: data.reason || null,
-    device_used: null,
-    operator_name: null,
-    status: 'pending',
-    created_at: now.toISOString(),
-    completed_at: null
-  };
-  
-  db.requests.push(request);
-  
-  // Ajouter les items
-  const surfaceMap = { 'A4': 0.0625, 'A3': 0.125, 'A2': 0.25, 'A1': 0.5, 'A0': 1.0 };
-  
-  for (let item of data.items) {
-    const surface = item.pages * item.copies * (surfaceMap[item.format] || 0.0625);
-    
-    db.requestItems.push({
-      id: db.requestItems.length + 1,
-      request_id: request.id,
-      document_name: item.document_name,
-      format: item.format,
-      color_nb: item.color_nb,
-      pages: item.pages,
-      copies: item.copies,
-      surface_m2: surface,
-      total_pages: item.pages * item.copies
-    });
-  }
-  
-  saveDatabase();
-  return request;
-}
-
-// Obtenir toutes les demandes avec filtres
-function getRequests(filters = {}) {
-  let requests = db.requests.map(req => {
-    const items = db.requestItems.filter(item => item.request_id === req.id);
-    return {
-      ...req,
-      total_items: items.length,
-      sum_pages: items.reduce((sum, item) => sum + item.total_pages, 0),
-      sum_surface: items.reduce((sum, item) => sum + item.surface_m2, 0),
-      items: items
-    };
-  });
-  
-  // Appliquer les filtres
-  if (filters.status) {
-    requests = requests.filter(r => r.status === filters.status);
-  }
-  if (filters.department) {
-    requests = requests.filter(r => r.department === filters.department);
-  }
-  if (filters.search) {
-    const search = filters.search.toLowerCase();
-    requests = requests.filter(r => 
-      r.requester_name.toLowerCase().includes(search) ||
-      r.project.toLowerCase().includes(search) ||
-      r.request_number.toLowerCase().includes(search)
+    const connection = await pool.getConnection();
+    const [rows] = await connection.execute(
+      'SELECT id, name, email, profile, created_at FROM users WHERE email = ? AND password = ?',
+      [email, password]
     );
-  }
-  
-  return requests.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-}
-
-// Finaliser une demande
-function completeRequest(requestId, deviceUsed, operatorName) {
-  const request = db.requests.find(r => r.id === requestId);
-  if (!request) return null;
-  
-  request.device_used = deviceUsed;
-  request.operator_name = operatorName;
-  request.status = 'completed';
-  request.completed_at = new Date().toISOString();
-  
-  saveDatabase();
-  return request;
-}
-
-// Obtenir les statistiques
-function getStats() {
-  const completedRequests = db.requests.filter(r => r.status === 'completed');
-  
-  const global = {
-    total_requests: db.requests.length,
-    pending_requests: db.requests.filter(r => r.status === 'pending').length,
-    completed_requests: completedRequests.length,
-    total_pages: db.requestItems.reduce((sum, item) => sum + item.total_pages, 0),
-    total_surface: db.requestItems.reduce((sum, item) => sum + item.surface_m2, 0)
-  };
-  
-  // Statistiques par département
-  const departments = {};
-  db.requests.forEach(req => {
-    if (!departments[req.department]) {
-      departments[req.department] = { department: req.department, request_count: 0, pages: 0, surface: 0 };
-    }
-    departments[req.department].request_count++;
-    const items = db.requestItems.filter(item => item.request_id === req.id);
-    departments[req.department].pages += items.reduce((sum, item) => sum + item.total_pages, 0);
-    departments[req.department].surface += items.reduce((sum, item) => sum + item.surface_m2, 0);
-  });
-  
-  // Statistiques par utilisateur (Top 10)
-  const userStats = {};
-  db.requests.forEach(req => {
-    const key = `${req.requester_name}_${req.department}`;
-    if (!userStats[key]) {
-      userStats[key] = { requester_name: req.requester_name, department: req.department, request_count: 0, pages: 0, surface: 0 };
-    }
-    userStats[key].request_count++;
-    const items = db.requestItems.filter(item => item.request_id === req.id);
-    userStats[key].pages += items.reduce((sum, item) => sum + item.total_pages, 0);
-    userStats[key].surface += items.reduce((sum, item) => sum + item.surface_m2, 0);
-  });
-  
-  const users = Object.values(userStats).sort((a, b) => b.surface - a.surface).slice(0, 10);
-  
-  // Statistiques par appareil
-  const devices = {};
-  completedRequests.forEach(req => {
-    if (req.device_used) {
-      if (!devices[req.device_used]) {
-        devices[req.device_used] = { device_used: req.device_used, count: 0, pages: 0, surface: 0 };
-      }
-      devices[req.device_used].count++;
-      const items = db.requestItems.filter(item => item.request_id === req.id);
-      devices[req.device_used].pages += items.reduce((sum, item) => sum + item.total_pages, 0);
-      devices[req.device_used].surface += items.reduce((sum, item) => sum + item.surface_m2, 0);
-    }
-  });
-  
-  // Timeline
-  const timeline = {};
-  db.requests.forEach(req => {
-    const date = new Date(req.created_at).toISOString().split('T')[0];
-    if (!timeline[date]) {
-      timeline[date] = { date: date, count: 0, surface: 0 };
-    }
-    timeline[date].count++;
-    const items = db.requestItems.filter(item => item.request_id === req.id);
-    timeline[date].surface += items.reduce((sum, item) => sum + item.surface_m2, 0);
-  });
-  
-  return {
-    global,
-    departments: Object.values(departments).sort((a, b) => b.surface - a.surface),
-    users,
-    devices: Object.values(devices).sort((a, b) => b.count - a.count),
-    timeline: Object.values(timeline).sort((a, b) => a.date.localeCompare(b.date)).slice(-30)
-  };
-}
-
-// Fonction d'authentification
-function login(email, password) {
-  if (!db.users) {
-    console.error('[DB] Users array not initialized');
+    connection.release();
+    
+    return rows.length > 0 ? rows[0] : null;
+  } catch (error) {
+    console.error('Erreur lors de la connexion:', error);
     return null;
   }
-  
-  const user = db.users.find(u => u.email === email && u.password === password);
-  if (!user) {
-    return null;
-  }
-  // Retourner une copie sans le mot de passe
-  const { password: _, ...userWithoutPassword } = user;
-  return userWithoutPassword;
 }
 
 // Fonction de création de compte
-function signup(name, email, password, profile) {
-  // Vérifier que l'email n'existe pas déjà
-  if (db.users.find(u => u.email === email)) {
+async function signup(name, email, password, profile) {
+  try {
+    const connection = await pool.getConnection();
+    
+    // Vérifier que l'email n'existe pas déjà
+    const [existing] = await connection.execute(
+      'SELECT id FROM users WHERE email = ?',
+      [email]
+    );
+    
+    if (existing.length > 0) {
+      connection.release();
+      return null;
+    }
+    
+    // Insérer le nouvel utilisateur
+    const [result] = await connection.execute(
+      'INSERT INTO users (name, email, password, profile) VALUES (?, ?, ?, ?)',
+      [name, email, password, profile]
+    );
+    
+    connection.release();
+    
+    return {
+      id: result.insertId,
+      name,
+      email,
+      profile,
+      created_at: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error('Erreur lors de la création de compte:', error);
     return null;
   }
-  
-  const newUser = {
-    id: db.nextUserId++,
-    name: name,
-    email: email,
-    password: password,
-    profile: profile,
-    created_at: new Date().toISOString()
-  };
-  
-  db.users.push(newUser);
-  saveDatabase();
-  
-  const { password: _, ...userWithoutPassword } = newUser;
-  return userWithoutPassword;
 }
 
 // Générer un token simplifié (en base64)
@@ -351,9 +101,314 @@ function verifyToken(token) {
   }
 }
 
+// === GESTION DES PROJETS ===
+
+// Ajouter un projet
+async function addProject(intitule, unite) {
+  try {
+    const connection = await pool.getConnection();
+    const [result] = await connection.execute(
+      'INSERT INTO projets (intitule, unite) VALUES (?, ?)',
+      [intitule, unite]
+    );
+    connection.release();
+    
+    return {
+      id: result.insertId,
+      intitule,
+      unite
+    };
+  } catch (error) {
+    console.error('Erreur lors de l\'ajout du projet:', error);
+    return null;
+  }
+}
+
+// Obtenir tous les projets
+async function getProjects() {
+  try {
+    const connection = await pool.getConnection();
+    const [rows] = await connection.execute('SELECT * FROM projets ORDER BY intitule ASC');
+    connection.release();
+    
+    return rows;
+  } catch (error) {
+    console.error('Erreur lors de la récupération des projets:', error);
+    return [];
+  }
+}
+
+// Obtenir un projet par ID
+async function getProjectById(id) {
+  try {
+    const connection = await pool.getConnection();
+    const [rows] = await connection.execute(
+      'SELECT * FROM projets WHERE id = ?',
+      [id]
+    );
+    connection.release();
+    
+    return rows.length > 0 ? rows[0] : null;
+  } catch (error) {
+    console.error('Erreur lors de la récupération du projet:', error);
+    return null;
+  }
+}
+
+// Modifier un projet
+async function updateProject(id, intitule, unite) {
+  try {
+    const connection = await pool.getConnection();
+    await connection.execute(
+      'UPDATE projets SET intitule = ?, unite = ? WHERE id = ?',
+      [intitule, unite, id]
+    );
+    connection.release();
+    
+    return true;
+  } catch (error) {
+    console.error('Erreur lors de la modification du projet:', error);
+    return false;
+  }
+}
+
+// Supprimer un projet
+async function deleteProject(id) {
+  try {
+    const connection = await pool.getConnection();
+    await connection.execute('DELETE FROM projets WHERE id = ?', [id]);
+    connection.release();
+    
+    return true;
+  } catch (error) {
+    console.error('Erreur lors de la suppression du projet:', error);
+    return false;
+  }
+}
+
+// === GESTION DES DEMANDES ===
+
+// Créer une nouvelle demande
+async function createRequest(data) {
+  try {
+    const connection = await pool.getConnection();
+    
+    // Générer le numéro de demande
+    const now = new Date();
+    const year = now.getFullYear();
+    const [countResult] = await connection.execute(
+      'SELECT COUNT(*) as count FROM requests WHERE YEAR(created_at) = ?',
+      [year]
+    );
+    const count = countResult[0].count + 1;
+    const request_number = `CIDI-${year}-${String(count).padStart(4, '0')}`;
+    
+    // Insérer la demande
+    const [result] = await connection.execute(
+      `INSERT INTO requests 
+       (request_number, requester_name, department, project, request_type, reason, status) 
+       VALUES (?, ?, ?, ?, ?, ?, 'pending')`,
+      [request_number, data.requester_name, data.department, data.project, data.request_type, data.reason || null]
+    );
+    
+    const requestId = result.insertId;
+    
+    // Insérer les items
+    const surfaceMap = { 'A4': 0.0625, 'A3': 0.125, 'A2': 0.25, 'A1': 0.5, 'A0': 1.0 };
+    
+    for (let item of data.items) {
+      const surface = item.pages * item.copies * (surfaceMap[item.format] || 0.0625);
+      
+      await connection.execute(
+        `INSERT INTO request_items 
+         (request_id, document_name, format, color_nb, pages, copies, surface_m2, total_pages) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [requestId, item.document_name, item.format, item.color_nb, item.pages, item.copies, surface, item.pages * item.copies]
+      );
+    }
+    
+    connection.release();
+    
+    return {
+      id: requestId,
+      request_number: request_number
+    };
+  } catch (error) {
+    console.error('Erreur lors de la création de la demande:', error);
+    throw error;
+  }
+}
+
+// Obtenir toutes les demandes avec filtres
+async function getRequests(filters = {}) {
+  try {
+    const connection = await pool.getConnection();
+    
+    let query = `
+      SELECT r.*, 
+             COUNT(ri.id) as total_items,
+             SUM(ri.total_pages) as total_pages,
+             SUM(ri.surface_m2) as total_surface
+      FROM requests r
+      LEFT JOIN request_items ri ON r.id = ri.request_id
+      WHERE 1=1
+    `;
+    const params = [];
+    
+    if (filters.status) {
+      query += ' AND r.status = ?';
+      params.push(filters.status);
+    }
+    
+    if (filters.department) {
+      query += ' AND r.department = ?';
+      params.push(filters.department);
+    }
+    
+    if (filters.search) {
+      query += ` AND (r.requester_name LIKE ? OR r.project LIKE ? OR r.request_number LIKE ?)`;
+      const search = `%${filters.search}%`;
+      params.push(search, search, search);
+    }
+    
+    query += ` GROUP BY r.id ORDER BY r.created_at DESC`;
+    
+    const [rows] = await connection.execute(query, params);
+    
+    // Récupérer les items pour chaque demande
+    for (let req of rows) {
+      const [items] = await connection.execute(
+        'SELECT * FROM request_items WHERE request_id = ?',
+        [req.id]
+      );
+      req.items = items;
+    }
+    
+    connection.release();
+    
+    return rows;
+  } catch (error) {
+    console.error('Erreur lors de la récupération des demandes:', error);
+    return [];
+  }
+}
+
+// Finaliser une demande
+async function completeRequest(requestId, deviceUsed, operatorName) {
+  try {
+    const connection = await pool.getConnection();
+    
+    const [result] = await connection.execute(
+      `UPDATE requests 
+       SET status = 'completed', device_used = ?, operator_name = ?, completed_at = NOW() 
+       WHERE id = ?`,
+      [deviceUsed, operatorName, requestId]
+    );
+    
+    connection.release();
+    
+    return result.affectedRows > 0 ? { id: requestId } : null;
+  } catch (error) {
+    console.error('Erreur lors de la finalisation de la demande:', error);
+    return null;
+  }
+}
+
+// Obtenir les statistiques
+async function getStats() {
+  try {
+    const connection = await pool.getConnection();
+    
+    // Statistiques globales
+    const [globalStats] = await connection.execute(`
+      SELECT 
+        COUNT(*) as total_requests,
+        SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_requests,
+        SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_requests,
+        SUM(ri.total_pages) as total_pages,
+        SUM(ri.surface_m2) as total_surface
+      FROM requests r
+      LEFT JOIN request_items ri ON r.id = ri.request_id
+    `);
+    
+    // Statistiques par département
+    const [deptStats] = await connection.execute(`
+      SELECT 
+        r.department,
+        COUNT(DISTINCT r.id) as request_count,
+        SUM(ri.total_pages) as pages,
+        SUM(ri.surface_m2) as surface
+      FROM requests r
+      LEFT JOIN request_items ri ON r.id = ri.request_id
+      GROUP BY r.department
+      ORDER BY surface DESC
+    `);
+    
+    // Statistiques par utilisateur (Top 10)
+    const [userStats] = await connection.execute(`
+      SELECT 
+        r.requester_name,
+        r.department,
+        COUNT(DISTINCT r.id) as request_count,
+        SUM(ri.total_pages) as pages,
+        SUM(ri.surface_m2) as surface
+      FROM requests r
+      LEFT JOIN request_items ri ON r.id = ri.request_id
+      GROUP BY r.requester_name, r.department
+      ORDER BY surface DESC
+      LIMIT 10
+    `);
+    
+    // Statistiques par appareil
+    const [deviceStats] = await connection.execute(`
+      SELECT 
+        r.device_used,
+        COUNT(DISTINCT r.id) as count,
+        SUM(ri.total_pages) as pages,
+        SUM(ri.surface_m2) as surface
+      FROM requests r
+      LEFT JOIN request_items ri ON r.id = ri.request_id
+      WHERE r.status = 'completed' AND r.device_used IS NOT NULL
+      GROUP BY r.device_used
+      ORDER BY count DESC
+    `);
+    
+    // Timeline (30 derniers jours)
+    const [timeline] = await connection.execute(`
+      SELECT 
+        DATE(r.created_at) as date,
+        COUNT(DISTINCT r.id) as count,
+        SUM(ri.surface_m2) as surface
+      FROM requests r
+      LEFT JOIN request_items ri ON r.id = ri.request_id
+      WHERE r.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+      GROUP BY DATE(r.created_at)
+      ORDER BY date ASC
+    `);
+    
+    connection.release();
+    
+    return {
+      global: globalStats[0] || {},
+      departments: deptStats,
+      users: userStats,
+      devices: deviceStats,
+      timeline: timeline
+    };
+  } catch (error) {
+    console.error('Erreur lors de la récupération des statistiques:', error);
+    return {
+      global: {},
+      departments: [],
+      users: [],
+      devices: [],
+      timeline: []
+    };
+  }
+}
+
 module.exports = {
   loadDatabase,
-  saveDatabase,
   createRequest,
   getRequests,
   completeRequest,
@@ -361,5 +416,11 @@ module.exports = {
   login,
   signup,
   generateToken,
-  verifyToken
+  verifyToken,
+  addProject,
+  getProjects,
+  getProjectById,
+  updateProject,
+  deleteProject,
+  pool // Export pool pour la migration
 };

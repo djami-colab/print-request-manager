@@ -22,12 +22,13 @@ const FORMAT_SURFACES = {
 };
 
 // Initialisation
-function initDB() {
+async function initDB() {
   try {
-    db.loadDatabase();
-    console.log('Base de données initialisée (JSON file storage).');
+    await db.loadDatabase();
+    console.log('Base de données initialisée (MySQL storage).');
   } catch (error) {
     console.error('Erreur lors de l\'initialisation :', error.message);
+    process.exit(1);
   }
 }
 
@@ -50,7 +51,7 @@ function authenticateToken(req, res, next) {
 }
 
 // API: Connexion
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     
@@ -58,7 +59,7 @@ app.post('/api/auth/login', (req, res) => {
       return res.status(400).json({ error: 'Email et mot de passe requis' });
     }
     
-    const user = db.login(email, password);
+    const user = await db.login(email, password);
     if (!user) {
       return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
     }
@@ -71,7 +72,7 @@ app.post('/api/auth/login', (req, res) => {
 });
 
 // API: Création de compte
-app.post('/api/auth/signup', (req, res) => {
+app.post('/api/auth/signup', async (req, res) => {
   try {
     const { name, email, password, profile } = req.body;
     
@@ -83,7 +84,7 @@ app.post('/api/auth/signup', (req, res) => {
       return res.status(400).json({ error: 'Le mot de passe doit contenir au moins 6 caractères' });
     }
     
-    const user = db.signup(name, email, password, profile);
+    const user = await db.signup(name, email, password, profile);
     if (!user) {
       return res.status(400).json({ error: 'Cet email existe déjà' });
     }
@@ -104,7 +105,7 @@ app.get('/api/requests', authenticateToken, async (req, res) => {
     if (department) filters.department = department;
     if (search) filters.search = search;
     
-    const requests = db.getRequests(filters);
+    const requests = await db.getRequests(filters);
     res.json(requests);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -120,7 +121,7 @@ app.post('/api/requests', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Champs obligatoires manquants.' });
     }
     
-    const request = db.createRequest({ requester_name, department, project, request_type, reason, items });
+    const request = await db.createRequest({ requester_name, department, project, request_type, reason, items });
     res.status(201).json({ success: true, requestId: request.id, request_number: request.request_number });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -137,7 +138,7 @@ app.put('/api/requests/:id/complete', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'L\'appareil utilisé et le nom de l\'opérateur sont requis.' });
     }
     
-    const request = db.completeRequest(parseInt(id), device_used, operator_name);
+    const request = await db.completeRequest(parseInt(id), device_used, operator_name);
     if (!request) {
       return res.status(404).json({ error: 'Demande introuvable.' });
     }
@@ -151,7 +152,7 @@ app.put('/api/requests/:id/complete', authenticateToken, async (req, res) => {
 // API: Obtenir des statistiques pour le tableau de bord
 app.get('/api/stats', authenticateToken, async (req, res) => {
   try {
-    const stats = db.getStats();
+    const stats = await db.getStats();
     res.json(stats);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -216,7 +217,7 @@ app.get('/api/export', authenticateToken, async (req, res) => {
     if (department) filters.department = department;
     if (search) filters.search = search;
     
-    const requests = db.getRequests(filters);
+    const requests = await db.getRequests(filters);
     
     // Creer un classeur Excel
     const workbook = new ExcelJS.Workbook();
@@ -417,7 +418,8 @@ app.get('/api/export', authenticateToken, async (req, res) => {
 });
 
 // Lancer le serveur
-app.listen(PORT, async () => {
-  console.log(`Serveur démarré sur http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', async () => {
+  console.log(`Serveur démarré sur http://0.0.0.0:${PORT}`);
+  console.log(`Accédez via : http://localhost:${PORT}`);
   await initDB();
 });

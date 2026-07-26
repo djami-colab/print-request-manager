@@ -328,7 +328,7 @@
             document.getElementById('bon-date').textContent = new Date().toLocaleDateString('fr-FR');
             document.getElementById('bon-requester').textContent = bonData.requester_name;
             document.getElementById('bon-department').textContent = bonData.department || '-';
-            document.getElementById('bon-reason').textContent = bonData.reason || 'Aucune raison spécifiée';
+            document.getElementById('bon-reason').textContent = bonData.project || 'Aucun projet spécifié';
 
             // Remplir les pièces à imprimer
             if (bonData.items && bonData.items.length > 0) {
@@ -356,9 +356,10 @@
                 document.getElementById('bon-types').innerHTML = typesHtml;
             }
 
-            // Remplir le motif
-            if (bonData.reason) {
-                document.getElementById('bon-motif').textContent = bonData.reason;
+            // Remplir le motif (si section existe)
+            const motifElement = document.getElementById('bon-motif');
+            if (motifElement && bonData.reason) {
+                motifElement.textContent = bonData.reason;
             }
 
             // Remplir le nom de l'opérateur

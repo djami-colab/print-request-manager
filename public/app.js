@@ -666,7 +666,9 @@ function renderLucideIcons() {
 // Générer et sauvegarder le bon en PDF
 async function generateAndSaveBonPDF(bonData) {
   try {
+    console.log('[v0] PDF Gen Starting for:', bonData.requester_name);
     if (typeof html2pdf === 'undefined') {
+      console.log('[v0] html2pdf not available');
       return;
     }
     
@@ -680,6 +682,8 @@ async function generateAndSaveBonPDF(bonData) {
     element.style.display = 'none';
     document.body.appendChild(element);
     
+    console.log('[v0] Starting PDF conversion...');
+    
     // Options pour html2pdf
     const options = {
       margin: 5,
@@ -692,9 +696,11 @@ async function generateAndSaveBonPDF(bonData) {
     // Générer le PDF
     html2pdf().set(options).from(element).toPdf().get('pdf').then(async (pdf) => {
       try {
+        console.log('[v0] PDF generated successfully');
         // Convertir le PDF en base64
         const pdfBase64 = pdf.output('dataurlstring').split(',')[1];
         
+        console.log('[v0] Sending PDF to server...');
         // Envoyer au serveur pour sauvegarde
         const response = await fetch('/api/bons/save', {
           method: 'POST',

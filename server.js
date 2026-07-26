@@ -12,6 +12,11 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Route de redirection racine vers landing page
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'landing.html'));
+});
+
 // Facteurs de surface pour chaque format (en m²)
 const FORMAT_SURFACES = {
   'A4': 0.0625,

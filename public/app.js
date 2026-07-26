@@ -666,11 +666,7 @@ function renderLucideIcons() {
 // Générer et sauvegarder le bon en PDF
 async function generateAndSaveBonPDF(bonData) {
   try {
-    console.log('[v0] Starting PDF generation for bon:', bonData.requester_name);
-    console.log('[v0] html2pdf library available:', typeof html2pdf !== 'undefined');
-    
     if (typeof html2pdf === 'undefined') {
-      console.warn('[v0] html2pdf library not loaded, skipping PDF generation');
       return;
     }
     
@@ -684,8 +680,6 @@ async function generateAndSaveBonPDF(bonData) {
     element.style.display = 'none';
     document.body.appendChild(element);
     
-    console.log('[v0] PDF HTML generated, element added to DOM');
-    
     // Options pour html2pdf
     const options = {
       margin: 5,
@@ -696,13 +690,10 @@ async function generateAndSaveBonPDF(bonData) {
     };
     
     // Générer le PDF
-    console.log('[v0] Starting html2pdf conversion...');
     html2pdf().set(options).from(element).toPdf().get('pdf').then(async (pdf) => {
       try {
         // Convertir le PDF en base64
         const pdfBase64 = pdf.output('dataurlstring').split(',')[1];
-        
-        console.log('[v0] PDF generated, uploading to server...');
         
         // Envoyer au serveur pour sauvegarde
         const response = await fetch('/api/bons/save', {
@@ -723,23 +714,20 @@ async function generateAndSaveBonPDF(bonData) {
         
         if (response.ok) {
           const result = await response.json();
-          console.log('[v0] Bon sauvegardé avec succès:', result.bon_id);
         } else {
           const error = await response.text();
-          console.error('[v0] Erreur lors de la sauvegarde du bon:', error);
         }
       } catch (error) {
-        console.error('[v0] Erreur lors de l\'envoi du PDF au serveur:', error);
+        // Silently ignore errors
       }
       
       // Nettoyer
       element.remove();
     }).catch(err => {
-      console.error('[v0] Erreur lors de la génération du PDF:', err);
       element.remove();
     });
   } catch (error) {
-    console.error('[v0] Erreur lors de la génération et sauvegarde du bon:', error);
+    // Silently ignore errors
   }
 }
 

@@ -158,6 +158,55 @@ app.get('/api/stats', authenticateToken, async (req, res) => {
   }
 });
 
+// API: Sauvegarder un bon en PDF
+app.post('/api/bons/save', async (req, res) => {
+  try {
+    const { pdfBase64, requester_name, department, project, operator_name, devices, items } = req.body;
+    
+    if (!pdfBase64 || !requester_name) {
+      return res.status(400).json({ error: 'PDF et informations requises manquantes' });
+    }
+    
+    // Générer un ID unique et un nom de fichier
+    const timestamp = new Date();
+    const dateStr = timestamp.toISOString().split('T')[0].replace(/-/g, '');
+    const timeStr = timestamp.toTimeString().split(' ')[0].replace(/:/g, '');
+    const sanitizedName = requester_name.replace(/[^a-zA-Z0-9]/g, '').substring(0, 15);
+    const filename = `BON-${dateStr}-${timeStr}-${sanitizedName}.pdf`;
+    const filepath = path.join(__dirname, 'bons', filename);
+    
+    // Convertir base64 en buffer et sauvegarder
+    const pdfBuffer = Buffer.from(pdfBase64, 'base64');
+    const fs = require('fs');
+    fs.writeFileSync(filepath, pdfBuffer);
+    
+    // Créer un fichier de métadonnées JSON
+    const metadataFilename = filename.replace('.pdf', '.json');
+    const metadataPath = path.join(__dirname, 'bons', metadataFilename);
+    const metadata = {
+      bon_id: filename.replace('.pdf', ''),
+      timestamp: timestamp.toISOString(),
+      requester_name,
+      department,
+      project,
+      operator_name,
+      devices,
+      items_count: items ? items.length : 0
+    };
+    fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2));
+    
+    res.json({ 
+      success: true, 
+      bon_id: filename.replace('.pdf', ''),
+      filename,
+      message: 'Bon sauvegardé avec succès' 
+    });
+  } catch (error) {
+    console.error('Erreur lors de la sauvegarde du bon:', error);
+    res.status(500).json({ error: 'Erreur lors de la sauvegarde du bon: ' + error.message });
+  }
+});
+
 // API: Export Excel avec ExcelJS (haute qualite, formate)
 app.get('/api/export', authenticateToken, async (req, res) => {
   try {

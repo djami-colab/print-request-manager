@@ -238,29 +238,36 @@ async function submitPrintRequest(event) {
     // Stocker dans sessionStorage pour la page du bon
     sessionStorage.setItem('bonData', JSON.stringify(bonData));
     
-    // Envoyer au serveur
+    // Envoyer au serveur (optionnel, pour les pages authentifiées)
     const token = localStorage.getItem('token');
-    const response = await fetch('/api/requests', {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        requester_name: requesterName,
-        department: department,
-        project: project,
-        request_type: requestTypes.join(', '),
-        reason: reason,
-        items: items
-      })
-    });
+    const isPublicPage = window.location.pathname.includes('bon-public');
     
-    if (!response.ok) {
-      throw new Error('Erreur lors de la création de la demande');
+    if (token && !isPublicPage) {
+      const response = await fetch('/api/requests', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          requester_name: requesterName,
+          department: department,
+          project: project,
+          request_type: requestTypes.join(', '),
+          reason: reason,
+          items: items
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Erreur lors de la création de la demande');
+      }
     }
     
-    const data = await response.json();
+    // Générer et sauvegarder le bon en PDF
+    setTimeout(() => {
+      generateAndSaveBonPDF(bonData);
+    }, 1000);
     
     // Ouvrir la page du bon dans un nouvel onglet/fenêtre
     window.open('/bon-impression.html', 'bon_impression', 'width=950,height=1200');
@@ -654,4 +661,157 @@ function renderLucideIcons() {
   if (typeof lucide !== 'undefined') {
     lucide.createIcons();
   }
+}
+
+// Générer et sauvegarder le bon en PDF
+async function generateAndSaveBonPDF(bonData) {
+  try {
+    console.log('[v0] Starting PDF generation for bon:', bonData.requester_name);
+    
+    // Créer un délai pour permettre au bon d'être affiché dans la nouvelle fenêtre
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    
+    // Générer le PDF directement depuis les données du bon
+    const html = generateBonHTML(bonData);
+    const element = document.createElement('div');
+    element.innerHTML = html;
+    element.style.display = 'none';
+    document.body.appendChild(element);
+    
+    // Options pour html2pdf
+    const options = {
+      margin: 5,
+      filename: `BON-${bonData.requester_name}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+    };
+    
+    // Générer le PDF
+    html2pdf().set(options).from(element).toPdf().get('pdf').then(async (pdf) => {
+      try {
+        // Convertir le PDF en base64
+        const pdfBase64 = pdf.output('dataurlstring').split(',')[1];
+        
+        console.log('[v0] PDF generated, uploading to server...');
+        
+        // Envoyer au serveur pour sauvegarde
+        const response = await fetch('/api/bons/save', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            pdfBase64: pdfBase64,
+            requester_name: bonData.requester_name,
+            department: bonData.department,
+            project: bonData.project,
+            operator_name: bonData.operator_name,
+            devices: bonData.devices,
+            items: bonData.items
+          })
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          console.log('[v0] Bon sauvegardé avec succès:', result.bon_id);
+        } else {
+          const error = await response.text();
+          console.error('[v0] Erreur lors de la sauvegarde du bon:', error);
+        }
+      } catch (error) {
+        console.error('[v0] Erreur lors de l\'envoi du PDF au serveur:', error);
+      }
+      
+      // Nettoyer
+      element.remove();
+    }).catch(err => {
+      console.error('[v0] Erreur lors de la génération du PDF:', err);
+      element.remove();
+    });
+  } catch (error) {
+    console.error('[v0] Erreur lors de la génération et sauvegarde du bon:', error);
+  }
+}
+
+// Générer le HTML du bon
+function generateBonHTML(bonData) {
+  const itemsHTML = (bonData.items || []).map((item, idx) => `
+    <tr>
+      <td style="text-align: center; width: 30px;">${idx + 1}</td>
+      <td>${item.document_name || '-'}</td>
+      <td>${item.format || '-'}</td>
+      <td>${item.color_nb || '-'}</td>
+      <td>${item.pages || 1}</td>
+      <td>${item.copies || 1}</td>
+    </tr>
+  `).join('');
+  
+  const typesHTML = (bonData.request_type || []).map(type => `
+    <div style="margin: 5px 0;">
+      <input type="checkbox" checked disabled>
+      <span>${type}</span>
+    </div>
+  `).join('');
+  
+  const devicesHTML = ['Traceur T1600', 'Traceur T1300', 'Traceur Epson 5600', 'Altalink Xerox', 'Kyocera 7003i', 'Scanner Contex', 'Relieuse', 'Photocopieuse Xerox'].map(device => `
+    <div style="margin: 5px 0;">
+      <input type="checkbox" ${(bonData.devices || []).includes(device) ? 'checked' : ''} disabled>
+      <span>${device}</span>
+    </div>
+  `).join('');
+  
+  return `
+    <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 800px;">
+      <div style="border: 2px solid #333; padding: 15px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+          <div style="text-align: center; font-weight: bold; font-size: 12px;">Centre de l'Ingénierie et de Développement des Infrastructures</div>
+          <div style="text-align: center; font-weight: bold;">BON DE DEMANDE DE SERVICE IMPRESSION</div>
+          <div style="text-align: right;">Date: ${new Date().toLocaleDateString('fr-FR')}</div>
+        </div>
+        
+        <h3 style="border-bottom: 2px solid #333; padding-bottom: 5px;">DEMANDEUR</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+          <div><strong>Nom & Prénom:</strong> ${bonData.requester_name}</div>
+          <div><strong>Département:</strong> ${bonData.department}</div>
+          <div><strong>Projet lié à l'impression:</strong> ${bonData.project}</div>
+        </div>
+        
+        <h3 style="border-bottom: 2px solid #333; padding-bottom: 5px;">PIÈCES À IMPRIMER</h3>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
+          <tr style="background-color: #e0e0e0;">
+            <th style="border: 1px solid #333; padding: 5px;">N°</th>
+            <th style="border: 1px solid #333; padding: 5px;">Désignation</th>
+            <th style="border: 1px solid #333; padding: 5px;">Format</th>
+            <th style="border: 1px solid #333; padding: 5px;">Couleur</th>
+            <th style="border: 1px solid #333; padding: 5px;">Pages</th>
+            <th style="border: 1px solid #333; padding: 5px;">Copies</th>
+          </tr>
+          ${itemsHTML}
+        </table>
+        
+        <h3 style="border-bottom: 2px solid #333; padding-bottom: 5px;">TYPE DE MOYEN DEMANDÉ</h3>
+        <div style="margin-bottom: 15px;">${typesHTML}</div>
+        
+        <h3 style="border-bottom: 2px solid #333; padding-bottom: 5px;">OPÉRATEUR DE TIRAGE</h3>
+        <div style="margin-bottom: 15px;">
+          <strong>Nom de l'opérateur:</strong> ${bonData.operator_name || '___________________'}
+        </div>
+        
+        <h3 style="border-bottom: 2px solid #333; padding-bottom: 5px;">APPAREIL UTILISÉ</h3>
+        <div style="margin-bottom: 15px;">${devicesHTML}</div>
+        
+        <div style="display: flex; justify-content: space-around; margin-top: 30px;">
+          <div style="text-align: center;">
+            <div style="height: 60px; border-bottom: 1px solid #333;"></div>
+            <div style="margin-top: 5px;">Visa du demandeur</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="height: 60px; border-bottom: 1px solid #333;"></div>
+            <div style="margin-top: 5px;">Visa du chef de département</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
 }

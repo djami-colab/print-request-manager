@@ -149,6 +149,17 @@ app.put('/api/requests/:id/complete', authenticateToken, async (req, res) => {
   }
 });
 
+// API: Obtenir la liste des projets pour l'autocomplete
+app.get('/api/projets/list', async (req, res) => {
+  try {
+    const projects = await db.getProjects();
+    res.json(projects);
+  } catch (error) {
+    console.error('Erreur lors de la récupération des projets:', error);
+    res.status(500).json({ error: 'Erreur lors de la récupération des projets' });
+  }
+});
+
 // API: Obtenir des statistiques pour le tableau de bord
 app.get('/api/stats', authenticateToken, async (req, res) => {
   try {

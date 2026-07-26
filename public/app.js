@@ -3,6 +3,8 @@ let currentProfile = 'demandeur';
 let currentTab = 'new';
 let currentRequests = [];
 let chartInstances = {};
+let allProjects = [];
+let selectedProjectIndex = -1;
 
 // Initialisation au chargement
 document.addEventListener('DOMContentLoaded', () => {
@@ -11,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Charger les données après initialisation
   setTimeout(() => {
+    loadProjects();
     loadRequests();
     if (currentProfile === 'operateur') {
       loadStats();
@@ -811,4 +814,146 @@ function generateBonHTML(bonData) {
       </div>
     </div>
   `;
+}
+
+// ==================== AUTOCOMPLETE PROJECT FUNCTIONS ====================
+
+// Charger les projets depuis la base de données
+async function loadProjects() {
+  try {
+    const response = await fetch('/api/projets/list');
+    if (response.ok) {
+      allProjects = await response.json();
+      console.log('[v0] Projects loaded:', allProjects.length);
+    }
+  } catch (error) {
+    console.error('[v0] Error loading projects:', error);
+  }
+}
+
+// Filtrer les projets selon l'input
+function filterProjects(searchText) {
+  const trimmed = searchText.toLowerCase().trim();
+  
+  if (!trimmed) {
+    return allProjects;
+  }
+  
+  // Recherche par n'importe quelle partie du nom
+  return allProjects.filter(project => 
+    project.intitule.toLowerCase().includes(trimmed) ||
+    project.unite.toLowerCase().includes(trimmed)
+  );
+}
+
+// Afficher le dropdown
+function showProjectDropdown(event) {
+  const input = event.target;
+  const dropdown = document.getElementById('project-dropdown');
+  const filtered = filterProjects(input.value);
+  
+  if (filtered.length > 0) {
+    renderProjectOptions(filtered, dropdown);
+    dropdown.classList.add('open');
+    selectedProjectIndex = -1;
+  }
+}
+
+// Masquer le dropdown
+function hideProjectDropdown() {
+  setTimeout(() => {
+    const dropdown = document.getElementById('project-dropdown');
+    dropdown.classList.remove('open');
+    selectedProjectIndex = -1;
+  }, 200);
+}
+
+// Gérer l'input du projet
+function handleProjectInput(event) {
+  const input = event.target;
+  const dropdown = document.getElementById('project-dropdown');
+  const filtered = filterProjects(input.value);
+  
+  if (input.value && filtered.length > 0) {
+    renderProjectOptions(filtered, dropdown);
+    dropdown.classList.add('open');
+    selectedProjectIndex = -1;
+  } else {
+    dropdown.classList.remove('open');
+  }
+}
+
+// Rendre les options du dropdown
+function renderProjectOptions(projects, dropdown) {
+  dropdown.innerHTML = projects.map((project, index) => `
+    <div class="autocomplete-item" 
+         data-index="${index}"
+         onclick="selectProject('${project.intitule}', '${project.unite}')">
+      <div class="autocomplete-item-text">${project.intitule}</div>
+      <div class="autocomplete-item-sub">Unité: ${project.unite}</div>
+    </div>
+  `).join('');
+  
+  // Ajouter les event listeners
+  dropdown.querySelectorAll('.autocomplete-item').forEach((item, index) => {
+    item.addEventListener('click', () => {
+      selectProject(projects[index].intitule, projects[index].unite);
+    });
+    item.addEventListener('mouseenter', () => {
+      selectedProjectIndex = index;
+      updateProjectSelection();
+    });
+  });
+}
+
+// Sélectionner un projet
+function selectProject(projectName, unite) {
+  const input = document.getElementById('project');
+  input.value = projectName;
+  
+  const dropdown = document.getElementById('project-dropdown');
+  dropdown.classList.remove('open');
+  selectedProjectIndex = -1;
+  
+  // Mettre à jour un champ caché pour l'unité (optionnel)
+  const hiddenUnite = document.getElementById('project-unite');
+  if (hiddenUnite) {
+    hiddenUnite.value = unite;
+  }
+}
+
+// Gérer les touches clavier pour le dropdown
+function handleProjectKeydown(event) {
+  const dropdown = document.getElementById('project-dropdown');
+  const items = dropdown.querySelectorAll('.autocomplete-item');
+  
+  if (event.key === 'ArrowDown') {
+    event.preventDefault();
+    selectedProjectIndex = Math.min(selectedProjectIndex + 1, items.length - 1);
+    updateProjectSelection();
+  } else if (event.key === 'ArrowUp') {
+    event.preventDefault();
+    selectedProjectIndex = Math.max(selectedProjectIndex - 1, -1);
+    updateProjectSelection();
+  } else if (event.key === 'Enter') {
+    event.preventDefault();
+    if (selectedProjectIndex >= 0 && items[selectedProjectIndex]) {
+      items[selectedProjectIndex].click();
+    }
+  } else if (event.key === 'Escape') {
+    hideProjectDropdown();
+  }
+}
+
+// Mettre à jour la sélection visuelle
+function updateProjectSelection() {
+  const items = document.querySelectorAll('.autocomplete-item');
+  items.forEach((item, index) => {
+    if (index === selectedProjectIndex) {
+      item.classList.add('selected');
+      item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } else {
+      item.classList.remove('selected');
+    }
+  });
 }

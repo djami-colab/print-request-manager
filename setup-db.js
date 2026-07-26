@@ -26,27 +26,79 @@ async function setupDatabase() {
     const connectionNoDb = await poolNoDb.getConnection();
     console.log('✅ Connected to MySQL server\n');
 
-    // Read and execute schema.sql
-    const schemaPath = path.join(__dirname, 'schema.sql');
-    const schemaSql = fs.readFileSync(schemaPath, 'utf-8');
-    
-    // Split by statements and execute each one
-    const statements = schemaSql
-      .split(';')
-      .map(stmt => stmt.trim())
-      .filter(stmt => stmt && !stmt.startsWith('--'));
+    // Create database
+    console.log('🏗️ Creating database...');
+    try {
+      await connectionNoDb.query(`CREATE DATABASE IF NOT EXISTS \`${database}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+      console.log(`✅ Database '${database}' created/verified`);
+    } catch (error) {
+      console.error('❌ Error creating database:', error.message);
+    }
 
-    console.log('🏗️ Creating database and tables...');
-    for (const statement of statements) {
+    // Create tables
+    console.log('\n🏗️ Creating tables...');
+    const tableStatements = [
+      `CREATE TABLE IF NOT EXISTS \`${database}\`.\`users\` (
+        \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+        \`name\` VARCHAR(100) NOT NULL,
+        \`email\` VARCHAR(100) NOT NULL UNIQUE,
+        \`password\` VARCHAR(255) NOT NULL,
+        \`profile\` VARCHAR(50) NOT NULL,
+        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX \`idx_email\` (\`email\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+      
+      `CREATE TABLE IF NOT EXISTS \`${database}\`.\`projets\` (
+        \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+        \`intitule\` VARCHAR(255) NOT NULL UNIQUE,
+        \`unite\` VARCHAR(100) DEFAULT 'CIDI',
+        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX \`idx_intitule\` (\`intitule\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+      
+      `CREATE TABLE IF NOT EXISTS \`${database}\`.\`requests\` (
+        \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+        \`request_number\` VARCHAR(50) NOT NULL UNIQUE,
+        \`requester_name\` VARCHAR(100) NOT NULL,
+        \`department\` VARCHAR(50) NOT NULL,
+        \`project\` VARCHAR(100) NOT NULL,
+        \`request_type\` VARCHAR(255) NOT NULL,
+        \`reason\` TEXT DEFAULT NULL,
+        \`device_used\` VARCHAR(100) DEFAULT NULL,
+        \`operator_name\` VARCHAR(100) DEFAULT NULL,
+        \`status\` VARCHAR(20) NOT NULL DEFAULT 'pending',
+        \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        \`completed_at\` TIMESTAMP NULL DEFAULT NULL,
+        INDEX \`idx_status\` (\`status\`),
+        INDEX \`idx_department\` (\`department\`),
+        INDEX \`idx_created_at\` (\`created_at\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+      
+      `CREATE TABLE IF NOT EXISTS \`${database}\`.\`request_items\` (
+        \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+        \`request_id\` INT NOT NULL,
+        \`document_name\` VARCHAR(255) NOT NULL,
+        \`format\` VARCHAR(10) NOT NULL,
+        \`color_nb\` VARCHAR(20) NOT NULL,
+        \`pages\` INT NOT NULL DEFAULT 1,
+        \`copies\` INT NOT NULL DEFAULT 1,
+        \`surface_m2\` DOUBLE NOT NULL,
+        \`total_pages\` INT NOT NULL,
+        FOREIGN KEY (\`request_id\`) REFERENCES \`${database}\`.\`requests\` (\`id\`) ON DELETE CASCADE,
+        INDEX \`idx_request_id\` (\`request_id\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
+    ];
+
+    for (const statement of tableStatements) {
       try {
-        await connectionNoDb.execute(statement);
+        await connectionNoDb.query(statement);
       } catch (error) {
         if (!error.message.includes('already exists')) {
-          console.error('❌ Error executing statement:', error.message);
+          console.error('❌ Error creating table:', error.message);
         }
       }
     }
-    console.log('✅ Database and tables created/verified\n');
+    console.log('✅ All tables created/verified\n');
 
     connectionNoDb.release();
     await poolNoDb.end();

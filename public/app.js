@@ -24,8 +24,8 @@ document.addEventListener('DOMContentLoaded', () => {
 function initializeApp() {
   console.log('[v0] App initialized');
   
-  // Check if on public page - skip auth for public bon page
-  const isPublicPage = window.location.pathname.includes('bon-public');
+  // Check if on public page - skip auth for public portail page
+  const isPublicPage = window.location.pathname.includes('portail');
   
   if (isPublicPage) {
     // Skip authentication for public page
@@ -243,7 +243,7 @@ async function submitPrintRequest(event) {
     
     // Envoyer au serveur (optionnel, pour les pages authentifiées)
     const token = localStorage.getItem('token');
-    const isPublicPage = window.location.pathname.includes('bon-public');
+    const isPublicPage = window.location.pathname.includes('portail');
     
     if (token && !isPublicPage) {
       const response = await fetch('/api/requests', {

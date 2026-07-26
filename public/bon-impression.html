@@ -247,7 +247,7 @@
             </div>
             <div>
                 <label>Projet lié à l'impression:</label>
-                <div class="value" id="bon-reason">-</div>
+                <div class="value" id="bon-project">-</div>
             </div>
         </div>
 
@@ -328,7 +328,7 @@
             document.getElementById('bon-date').textContent = new Date().toLocaleDateString('fr-FR');
             document.getElementById('bon-requester').textContent = bonData.requester_name;
             document.getElementById('bon-department').textContent = bonData.department || '-';
-            document.getElementById('bon-reason').textContent = bonData.reason || 'Aucune raison spécifiée';
+            document.getElementById('bon-project').textContent = bonData.project || '-';
 
             // Remplir les pièces à imprimer
             if (bonData.items && bonData.items.length > 0) {

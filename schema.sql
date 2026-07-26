@@ -2,6 +2,26 @@
 CREATE DATABASE IF NOT EXISTS `print_request_db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE `print_request_db`;
 
+-- Table des utilisateurs
+CREATE TABLE IF NOT EXISTS `users` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `name` VARCHAR(100) NOT NULL,
+  `email` VARCHAR(100) NOT NULL UNIQUE,
+  `password` VARCHAR(255) NOT NULL,
+  `profile` VARCHAR(50) NOT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX `idx_email` (`email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table des projets
+CREATE TABLE IF NOT EXISTS `projets` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `intitule` VARCHAR(255) NOT NULL UNIQUE,
+  `unite` VARCHAR(100) DEFAULT 'CIDI',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX `idx_intitule` (`intitule`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Table des demandes d'impression (Bons)
 CREATE TABLE IF NOT EXISTS `requests` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,

@@ -4,7 +4,9 @@
   "description": "Système d'automatisation des bons de demande de service impression et suivi de consommation",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "setup-db": "node setup-db.js",
+    "migrate": "node migrate.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

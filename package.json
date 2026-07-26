@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "setup-db": "node setup-db.js",
-    "migrate": "node migrate.js"
+    "migrate": "node migrate.js",
+    "migration:run": "node run-migration.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

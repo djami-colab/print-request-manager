@@ -1,26 +1,89 @@
-const mysql = require('mysql2/promise');
+const { Pool } = require('pg');
 require('dotenv').config();
+const jwt = require('jsonwebtoken');
 
-// Configuration MySQL
-const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'print_request_db',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
+// Configuration PostgreSQL (Neon)
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL
 });
 
 // Initialiser la base de données
 async function loadDatabase() {
   try {
-    const connection = await pool.getConnection();
-    console.log('Connexion MySQL réussie');
-    connection.release();
+    const client = await pool.connect();
+    console.log('[v0] Connexion PostgreSQL réussie');
+    
+    // Create tables if they don't exist
+    await initializeTables(client);
+    
+    client.release();
   } catch (error) {
-    console.error('Erreur de connexion MySQL:', error.message);
+    console.error('[v0] Erreur de connexion PostgreSQL:', error.message);
     throw error;
+  }
+}
+
+// Initialize tables
+async function initializeTables(client) {
+  try {
+    // Users table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        email VARCHAR(100) NOT NULL UNIQUE,
+        password VARCHAR(255) NOT NULL,
+        profile VARCHAR(50) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Projects table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS projets (
+        id SERIAL PRIMARY KEY,
+        intitule VARCHAR(255) NOT NULL UNIQUE,
+        unite VARCHAR(100) DEFAULT 'CIDI',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Requests table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS requests (
+        id SERIAL PRIMARY KEY,
+        request_number VARCHAR(50) NOT NULL UNIQUE,
+        requester_name VARCHAR(100) NOT NULL,
+        department VARCHAR(50) NOT NULL,
+        project VARCHAR(100) NOT NULL,
+        request_type VARCHAR(255) NOT NULL,
+        reason TEXT DEFAULT NULL,
+        device_used VARCHAR(100) DEFAULT NULL,
+        operator_name VARCHAR(100) DEFAULT NULL,
+        status VARCHAR(20) NOT NULL DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        completed_at TIMESTAMP DEFAULT NULL
+      )
+    `);
+
+    // Request items table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS request_items (
+        id SERIAL PRIMARY KEY,
+        request_id INT NOT NULL REFERENCES requests(id) ON DELETE CASCADE,
+        document_name VARCHAR(255) NOT NULL,
+        format VARCHAR(10) NOT NULL,
+        color_nb VARCHAR(20) NOT NULL,
+        pages INT NOT NULL DEFAULT 1,
+        copies INT NOT NULL DEFAULT 1,
+        surface_m2 DOUBLE PRECISION NOT NULL,
+        total_pages INT NOT NULL
+      )
+    `);
+
+    console.log('[v0] Tables initialized successfully');
+  } catch (error) {
+    console.error('[v0] Error initializing tables:', error.message);
   }
 }
 

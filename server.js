@@ -122,13 +122,25 @@ app.post('/api/requests', authenticateToken, async (req, res) => {
   try {
     const { requester_name, department, project, request_type, reason, items } = req.body;
     
+    console.log('[v0] POST /api/requests - Received:', {
+      requester_name,
+      department,
+      project,
+      request_type,
+      items_count: items?.length || 0
+    });
+    
     if (!requester_name || !department || !project || !request_type || !items || items.length === 0) {
+      console.log('[v0] Validation failed - missing required fields');
       return res.status(400).json({ error: 'Champs obligatoires manquants.' });
     }
     
     const request = await db.createRequest({ requester_name, department, project, request_type, reason, items });
+    console.log('[v0] Request created successfully:', request);
     res.status(201).json({ success: true, requestId: request.id, request_number: request.request_number });
   } catch (error) {
+    console.error('[v0] Error in POST /api/requests:', error.message);
+    console.error('[v0] Full error:', error);
     res.status(500).json({ error: error.message });
   }
 });

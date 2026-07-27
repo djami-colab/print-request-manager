@@ -190,8 +190,11 @@ async function deleteProject(id) {
 
 // Créer une nouvelle demande
 async function createRequest(data) {
+  let connection;
   try {
-    const connection = await pool.getConnection();
+    console.log('[v0] Creating request with data:', JSON.stringify(data).substring(0, 100));
+    
+    connection = await pool.getConnection();
     
     // Générer le numéro de demande
     const now = new Date();
@@ -202,6 +205,7 @@ async function createRequest(data) {
     );
     const count = countResult[0].count + 1;
     const request_number = `CIDI-${year}-${String(count).padStart(4, '0')}`;
+    console.log('[v0] Generated request number:', request_number);
     
     // Insérer la demande
     const [result] = await connection.execute(
@@ -212,12 +216,14 @@ async function createRequest(data) {
     );
     
     const requestId = result.insertId;
+    console.log('[v0] Request inserted with ID:', requestId);
     
     // Insérer les items
     const surfaceMap = { 'A4': 0.0625, 'A3': 0.125, 'A2': 0.25, 'A1': 0.5, 'A0': 1.0 };
     
     for (let item of data.items) {
       const surface = item.pages * item.copies * (surfaceMap[item.format] || 0.0625);
+      console.log('[v0] Inserting item:', item.document_name, 'with surface:', surface);
       
       await connection.execute(
         `INSERT INTO request_items 
@@ -228,13 +234,16 @@ async function createRequest(data) {
     }
     
     connection.release();
+    console.log('[v0] Request created successfully with ID:', requestId, 'Number:', request_number);
     
     return {
       id: requestId,
       request_number: request_number
     };
   } catch (error) {
-    console.error('Erreur lors de la création de la demande:', error);
+    console.error('[v0] Erreur lors de la création de la demande:', error.message);
+    console.error('[v0] Full error:', error);
+    if (connection) connection.release();
     throw error;
   }
 }

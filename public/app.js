@@ -263,8 +263,13 @@ async function submitPrintRequest(event) {
       });
       
       if (!response.ok) {
-        throw new Error('Erreur lors de la création de la demande');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('[v0] API Error:', errorData);
+        throw new Error(errorData.error || `Erreur lors de la création de la demande (${response.status})`);
       }
+      
+      const result = await response.json();
+      console.log('[v0] Request created successfully:', result);
     }
     
     // Générer et sauvegarder le bon en PDF
